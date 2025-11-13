@@ -7,7 +7,6 @@ import {
 
 // --- MOCK DATA (ALPHABET INC. 5-YEAR DEEP DIVE - "INVESTMENT BANKER" DETAIL) ---
 // All figures are in *Millions of USD*.
-// NEW: Added Cost of Revenue, R&D/S&M OpEx, and split Cloud into GCP/Workspace.
 const MOCK_FINANCIAL_DATA = [
   // --- 2021 ---
   { id: 1, year: 2021, segment: 'Google Services', item: 'Google Search', revenue: 149000, tac: 24000, costOfRevenue: 30000, opex_rd: 20000, opex_sm: 10000, operatingIncome: 65000 },
@@ -154,6 +153,8 @@ const MOCK_SYSTEM_ACCESS_DATA = [
   { id: 15, name: 'Olivia Jackson', email: 'olivia.jackson@example.com', department: 'Engineering', role: 'User', status: 'Deactivated', licenseType: 'Standard', cost: 0 },
 ];
 
+// --- NEW DATA FROM USER REQUEST ---
+
 // NEW MOCK FINANCIAL RATIO DATA (from user)
 const MOCK_RATIO_DATA = [
   { year: 2020, roe: 0.1809, roa: 0.1260, debtToEquity: 0.1203, debtToAsset: 0.0838, evToRevenue: 6.54, evToEbitda: 19.28, ev: 1190000, cashToDebt: 2.4325, taxRate: 0.1625 },
@@ -177,6 +178,8 @@ const MOCK_CLOUD_COMPARISON_DATA = [
   { metric: 'Strategic Weakness', aws: 'Perceived high cost, complex billing.', azure: 'Less feature-rich in some niche areas vs. AWS.', gcp: 'Smaller market share, less-developed enterprise sales channel.' },
 ];
 
+// --- END NEW DATA ---
+
 
 const uniqueYears = [...new Set(MOCK_FINANCIAL_DATA.map(item => item.year))].sort((a, b) => b - a);
 const SEGMENT_COLORS = { 'Google Services': '#4285F4', 'Google Cloud': '#34A853', 'Other Bets': '#FBBC05', 'Corporate Costs': '#EA4335', 'Corporate': '#EA4335' };
@@ -186,17 +189,10 @@ const YOUTUBE_COLORS = { 'Ad Revenue': '#4285F4', 'Subscriptions Revenue': '#34A
 const WAYMO_MILESTONES = { 2021: "Raised $2.5B in funding; 100K+ rides.", 2022: "Began charging for rides in San Francisco.", 2023: "Launched fully driverless rides in SF & Phoenix.", 2024: "Expanded operations to Austin; 2M driverless miles.", 2025: "Projected 10M driverless miles; 50,000 active riders." };
 
 // --- HELPER FUNCTIONS & COMPONENTS ---
-const formatLargeNumber = (value) => {
-  if (value === null || isNaN(value) || !isFinite(value)) return '$0M'; // FIX: Added !isFinite check
-  const valInMillions = value;
-  if (Math.abs(valInMillions) >= 1000) {
-    return `$${(valInMillions / 1000).toFixed(1)}B`;
-  }
-  return `$${valInMillions.toFixed(0)}M`;
-};
+const formatLargeNumber = (value) => { if (typeof value !== 'number' || value === null || !isFinite(value)) return '$0M'; const valInMillions = value; if (Math.abs(valInMillions) >= 1000) return `$${(valInMillions / 1000).toFixed(1)}B`; return `$${valInMillions.toFixed(0)}M`; };
 const formatNumber = (value) => new Intl.NumberFormat('en-US').format(value);
-const formatPercent = (value) => { if (value === null || isNaN(value) || !isFinite(value)) return '0.0%'; return `${(value * 100).toFixed(1)}%`; };
-const formatRatio = (value) => { if (value === null || isNaN(value) || !isFinite(value)) return '0.0x'; return `${value.toFixed(2)}x`; };
+const formatPercent = (value) => { if (typeof value !== 'number' || value === null || !isFinite(value)) return '0.0%'; return `${(value * 100).toFixed(1)}%`; };
+const formatRatio = (value) => { if (typeof value !== 'number' || value === null || !isFinite(value)) return '0.0x'; return `${value.toFixed(2)}x`; };
 const KpiCard = ({ title, value, change, isPositive, isCurrency = true }) => ( <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100"> <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">{title}</h3> <p className="text-3xl font-bold text-gray-900 mt-2">{value}</p> {change && ( <p className={`text-sm font-medium mt-1 ${isPositive ? 'text-green-600' : 'text-red-600'}`}> {isPositive ? '▲' : '▼'} {change} </p> )} </div> );
 const ChartWrapper = ({ title, children, height = "h-96" }) => ( <div className={`bg-white p-6 rounded-lg shadow-sm border border-gray-100 ${height}`}> <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3> <ResponsiveContainer width="100%" height="90%"> {children} </ResponsiveContainer> </div> );
 const FilterButton = ({ text, value, activeValue, onClick }) => ( <button onClick={() => onClick(value)} className={` px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeValue === value ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'} `} > {text} </button> );
@@ -224,7 +220,6 @@ const RevenueToProfitSankey = ({ financialData, year, segmentFilter }) => {
       opIncome_corporate: 0,
     };
     
-    // Segment-level aggregation
     const segmentRevenues = {};
     const segmentNodes = new Set();
     
@@ -247,39 +242,59 @@ const RevenueToProfitSankey = ({ financialData, year, segmentFilter }) => {
 
     const totalOpEx = totals.opex_rd + totals.opex_sm;
     const grossProfit = totals.revenue - totals.costOfRevenue - totals.tac;
-    // Note: Tax and Net Profit aren't in this granular data, so we estimate them based on OpIncome
-    // For a real Sankey, we'd need tax data. We will flow to Operating Income.
     const operatingProfit = grossProfit - totalOpEx + totals.opIncome_corporate; // opIncome_corporate is negative
 
-    const nodes = [
-      ...Array.from(segmentNodes).map(seg => ({ name: seg, color: SEGMENT_COLORS[seg] })),
-      { name: 'Total Revenue', color: '#4285F4' },
-      { name: 'Cost of Revenue', color: '#EA4335' },
-      { name: 'TAC', color: '#FBBC05' },
-      { name: 'Gross Profit', color: '#34A853' },
-      { name: 'R&D', color: '#EA4335' },
-      { name: 'S&M', color: '#EA4335' },
-      { name: 'Corporate Costs', color: '#FBBC05' },
-      { name: 'Operating Profit', color: '#34A853' },
+    // --- FIX: Use numerical indices for Sankey links ---
+    const nodeNames = [
+      ...Array.from(segmentNodes),
+      'Total Revenue', 'Cost of Revenue', 'TAC', 'Gross Profit',
+      'R&D', 'S&M', 'Corporate Costs', 'Operating Profit'
     ];
     
-    const links = [
+    const nodeColors = {
+      ...SEGMENT_COLORS,
+      'Total Revenue': '#4285F4',
+      'Cost of Revenue': '#EA4335',
+      'TAC': '#FBBC05',
+      'Gross Profit': '#34A853',
+      'R&D': '#EA4335',
+      'S&M': '#EA4335',
+      'Corporate Costs': '#FBBC05',
+      'Operating Profit': '#34A853'
+    };
+    
+    const nodes = nodeNames.map(name => ({ name, color: nodeColors[name] || '#B0B0B0' }));
+    const nodeMap = new Map(nodes.map((node, i) => [node.name, i]));
+
+    let links = [
       // Revenues -> Total Revenue
-      ...Object.entries(segmentRevenues).map(([seg, rev]) => ({ source: seg, target: 'Total Revenue', value: rev })),
+      ...Object.entries(segmentRevenues).map(([seg, rev]) => ({
+        source: nodeMap.get(seg),
+        target: nodeMap.get('Total Revenue'),
+        value: rev
+      })),
       
       // Total Revenue -> Gross Profit / CoR / TAC
-      { source: 'Total Revenue', target: 'Gross Profit', value: grossProfit },
-      { source: 'Total Revenue', target: 'Cost of Revenue', value: totals.costOfRevenue },
-      { source: 'Total Revenue', target: 'TAC', value: totals.tac },
+      { source: nodeMap.get('Total Revenue'), target: nodeMap.get('Gross Profit'), value: grossProfit },
+      { source: nodeMap.get('Total Revenue'), target: nodeMap.get('Cost of Revenue'), value: totals.costOfRevenue },
+      { source: nodeMap.get('Total Revenue'), target: nodeMap.get('TAC'), value: totals.tac },
       
       // Gross Profit -> Operating Profit / OpEx
-      { source: 'Gross Profit', target: 'Operating Profit', value: operatingProfit },
-      { source: 'Gross Profit', target: 'R&D', value: totals.opex_rd },
-      { source: 'Gross Profit', target: 'S&M', value: totals.opex_sm },
-      { source: 'Gross Profit', target: 'Corporate Costs', value: totals.opIncome_corporate * -1 },
+      { source: nodeMap.get('Gross Profit'), target: nodeMap.get('Operating Profit'), value: operatingProfit },
+      { source: nodeMap.get('Gross Profit'), target: nodeMap.get('R&D'), value: totals.opex_rd },
+      { source: nodeMap.get('Gross Profit'), target: nodeMap.get('S&M'), value: totals.opex_sm },
+      { source: nodeMap.get('Gross Profit'), target: nodeMap.get('Corporate Costs'), value: totals.opIncome_corporate * -1 },
     ];
+    
+    // CRITICAL: Filter out invalid links
+    links = links.filter(link => 
+      link.value > 0 && 
+      link.source !== undefined && 
+      link.target !== undefined
+    );
 
-    return { nodes: nodes.map((n, i) => ({ ...n, id: i })), links };
+    return { nodes, links };
+    // --- END SANKEY FIX ---
 
   }, [year, segmentFilter, financialData]);
 
@@ -296,40 +311,43 @@ const RevenueToProfitSankey = ({ financialData, year, segmentFilter }) => {
       <Sankey
         width={900}
         height={450}
-        data={sankeyData}
+        data={sankeyData} // Pass the object {nodes, links}
         nodePadding={50}
-        margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+        margin={{ top: 20, right: 150, bottom: 20, left: 150 }} // Add margin for labels
         link={{ stroke: '#B0B0B0', strokeOpacity: 0.3 }}
+        
+        // --- FIX: Use a custom node prop that includes text ---
         node={({ x, y, width, height, index, payload, containerWidth }) => {
-          const isSource = x < containerWidth / 2;
           const node = sankeyData.nodes[index];
+          const isSource = x < containerWidth / 2;
           return (
-            <rect
-              x={x}
-              y={y}
-              width={width}
-              height={height}
-              fill={node.color}
-              stroke="#fff"
-            />
+            <g>
+              <rect
+                x={x}
+                y={y}
+                width={width}
+                height={height}
+                fill={node.color}
+                stroke="#fff"
+              />
+              <text
+                x={isSource ? x - 6 : x + width + 6}
+                y={y + height / 2}
+                textAnchor={isSource ? "end" : "start"}
+                dominantBaseline="middle"
+                fill="#333"
+                fontSize={12}
+                fontWeight="bold"
+              >
+                {node.name}
+              </text>
+            </g>
           );
         }}
+        // --- END NODE FIX ---
       >
         <Tooltip formatter={formatLargeNumber} />
-        {sankeyData.nodes.map((node) => (
-          <text
-            key={node.name}
-            x={node.x < 500 ? node.x + 10 : node.x - 10}
-            y={node.y + node.dy / 2}
-            textAnchor={node.x < 500 ? "start" : "end"}
-            dominantBaseline="middle"
-            fill="#333"
-            fontSize={12}
-            fontWeight="bold"
-          >
-            {node.name}
-          </text>
-        ))}
+        {/* --- FIX: Removed invalid <text> children --- */}
       </Sankey>
     </ChartWrapper>
   );
@@ -352,7 +370,7 @@ const OverviewDashboard = ({ financialData, timeSeries, year, onYearChange, year
         </select> 
       </div> 
 
-      {/* --- NEW SANKEY CHART --- */}
+      {/* --- NEW SANKEY CHART (Star of the Show) --- */}
       <div className="lg:col-span-3">
         <RevenueToProfitSankey financialData={financialData} year={year} segmentFilter={segmentFilter} />
         <div className="flex justify-center space-x-4 mt-4">
@@ -455,25 +473,25 @@ const OverviewDashboard = ({ financialData, timeSeries, year, onYearChange, year
 // --- 2. GOOGLE SEARCH TAB ---
 const GoogleSearchTab = ({ data, year }) => {
   const timeData = useMemo(() => { return data .filter(d => d.item === 'Google Search') .map(d => ({ ...d, tacPercent: (d.tac / d.revenue), grossProfit: d.revenue - d.tac - d.costOfRevenue, grossMargin: (d.revenue - d.tac - d.costOfRevenue) / d.revenue, opMargin: (d.operatingIncome / d.revenue), })); }, [data]);
-  const currentYearData = timeData.find(d => d.year === year) || timeData[timeData.length - 1];
+  const currentYearData = timeData.find(d => d.year === year) || timeData[timeData.length - 1] || {};
   return ( <div className="space-y-6 animate-fadeIn"> <h2 className="text-2xl font-semibold text-gray-900 mb-0">Google Search ({year})</h2> <div className="grid grid-cols-1 md:grid-cols-4 gap-6"> <KpiCard title="Search Revenue" value={formatLargeNumber(currentYearData.revenue)} /> <KpiCard title="Gross Profit" value={formatLargeNumber(currentYearData.grossProfit)} /> <KpiCard title="Gross Margin" value={formatPercent(currentYearData.grossMargin)} isCurrency={false} /> <KpiCard title="TAC as % of Revenue" value={formatPercent(currentYearData.tacPercent)} change="Key Antitrust Metric" isPositive={false} isCurrency={false} /> </div> <ChartWrapper title="Search Revenue vs. Costs (Time Series)"> <LineChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatLargeNumber} /> <Tooltip content={<CurrencyTooltip />} /> <Legend /> <Line type="monotone" dataKey="revenue" name="Total Revenue" stroke="#4285F4" strokeWidth={3} /> <Line type="monotone" dataKey="costOfRevenue" name="Cost of Revenue" stroke="#FBBC05" strokeWidth={2} /> <Line type="monotone" dataKey="tac" name="Traffic Acquisition Cost (TAC)" stroke="#EA4335" strokeWidth={2} /> </LineChart> </ChartWrapper> <ChartWrapper title="Search Gross & Operating Margin (Time Series)"> <LineChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatPercent} /> <Tooltip content={<PercentTooltip />} /> <Legend /> <Line type="monotone" dataKey="grossMargin" name="Gross Margin %" stroke="#4285F4" strokeWidth={3} /> <Line type="monotone" dataKey="opMargin" name="Operating Margin %" stroke="#34A853" strokeWidth={2} strokeDasharray="5 5" /> </LineChart> </ChartWrapper> </div> );
 };
 
 // --- 3. YOUTUBE TAB ---
 const YouTubeTab = ({ data, year }) => {
   const timeData = useMemo(() => { const years = [...new Set(data.map(d => d.year))].sort(); return years.map(y => { const adData = data.find(d => d.year === y && d.item === 'YouTube Ads'); const subData = data.find(d => d.year === y && d.item === 'YouTube Subscriptions'); const adRev = adData ? adData.revenue : 0; const subRev = subData ? subData.revenue : 0; const totalRev = adRev + subRev; const totalOpIncome = (adData ? adData.operatingIncome : 0) + (subData ? subData.operatingIncome : 0); return { year: y, adRevenue: adRev, subRevenue: subRev, totalRevenue: totalRev, opMargin: totalRev > 0 ? totalOpIncome / totalRev : 0, }; }); }, [data]);
-  const currentYearData = timeData.find(d => d.year === year) || timeData[timeData.length - 1];
+  const currentYearData = timeData.find(d => d.year === year) || timeData[timeData.length - 1] || {};
   return ( <div className="space-y-6 animate-fadeIn"> <h2 className="text-2xl font-semibold text-gray-900 mb-0">YouTube ({year})</h2> <div className="grid grid-cols-1 md:grid-cols-3 gap-6"> <KpiCard title="Total YouTube Revenue" value={formatLargeNumber(currentYearData.totalRevenue)} /> <KpiCard title="Ad Revenue" value={formatLargeNumber(currentYearData.adRevenue)} /> <KpiCard title="Subscriptions Revenue" value={formatLargeNumber(currentYearData.subRevenue)} change="High-Growth" isPositive={true} /> </div> <ChartWrapper title="YouTube Revenue Sources (Time Series)"> <BarChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatLargeNumber} /> <Tooltip content={<CurrencyTooltip />} /> <Legend /> <Bar dataKey="adRevenue" name="Ad Revenue" stackId="a" fill={YOUTUBE_COLORS['Ad Revenue']} /> <Bar dataKey="subRevenue" name="Subscriptions Revenue" stackId="a" fill={YOUTUBE_COLORS['Subscriptions Revenue']} /> </BarChart> </ChartWrapper> </div> );
 };
 
 // --- 4. "BEEFED UP" GOOGLE CLOUD TAB ---
-const CloudSummary = ({ timeData, year }) => { const currentYearData = timeData.find(d => d.year === year) || timeData[timeData.length - 1]; return ( <div className="space-y-6"> <div className="grid grid-cols-1 md:grid-cols-4 gap-6"> <KpiCard title="Total Cloud Revenue" value={formatLargeNumber(currentYearData.totalRevenue)} /> <KpiCard title="Cloud Op. Income" value={formatLargeNumber(currentYearData.totalOpIncome)} isPositive={currentYearData.totalOpIncome >= 0} /> <KpiCard title="Cloud Op. Margin" value={formatPercent(currentYearData.opMargin)} isPositive={currentYearData.opMargin >= 0} /> <KpiCard title="Revenue Growth (YoY)" value={formatPercent(currentYearData.revenueGrowth)} isPositive={true} /> </div> <ChartWrapper title="Cloud Revenue & Profitability (Time Series)"> <LineChart data={timeData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis yAxisId="left" stroke={SEGMENT_COLORS['Google Cloud']} tickFormatter={formatLargeNumber} /> <YAxis yAxisId="right" orientation="right" stroke={currentYearData.totalOpIncome >= 0 ? SEGMENT_COLORS['Google Cloud'] : '#EA4335'} tickFormatter={formatLargeNumber} /> <Tooltip content={<CurrencyTooltip />} /> <Legend /> <Line yAxisId="left" type="monotone" dataKey="totalRevenue" name="Total Revenue" stroke={SEGMENT_COLORS['Google Cloud']} strokeWidth={3} /> <Line yAxisId="right" type="monotone" dataKey="totalOpIncome" name="Operating Income" stroke={currentYearData.totalOpIncome >= 0 ? SEGMENT_COLORS['Google Cloud'] : '#EA4335'} strokeWidth={3} /> </LineChart> </ChartWrapper> </div> ); };
+const CloudSummary = ({ timeData, year }) => { const currentYearData = timeData.find(d => d.year === year) || timeData[timeData.length - 1] || {}; return ( <div className="space-y-6"> <div className="grid grid-cols-1 md:grid-cols-4 gap-6"> <KpiCard title="Total Cloud Revenue" value={formatLargeNumber(currentYearData.totalRevenue)} /> <KpiCard title="Cloud Op. Income" value={formatLargeNumber(currentYearData.totalOpIncome)} isPositive={currentYearData.totalOpIncome >= 0} /> <KpiCard title="Cloud Op. Margin" value={formatPercent(currentYearData.opMargin)} isPositive={currentYearData.opMargin >= 0} /> <KpiCard title="Revenue Growth (YoY)" value={formatPercent(currentYearData.revenueGrowth)} isPositive={true} /> </div> <ChartWrapper title="Cloud Revenue & Profitability (Time Series)"> <LineChart data={timeData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis yAxisId="left" stroke={SEGMENT_COLORS['Google Cloud']} tickFormatter={formatLargeNumber} /> <YAxis yAxisId="right" orientation="right" stroke={currentYearData.totalOpIncome >= 0 ? SEGMENT_COLORS['Google Cloud'] : '#EA4335'} tickFormatter={formatLargeNumber} /> <Tooltip content={<CurrencyTooltip />} /> <Legend /> <Line yAxisId="left" type="monotone" dataKey="totalRevenue" name="Total Revenue" stroke={SEGMENT_COLORS['Google Cloud']} strokeWidth={3} /> <Line yAxisId="right" type="monotone" dataKey="totalOpIncome" name="Operating Income" stroke={currentYearData.totalOpIncome >= 0 ? SEGMENT_COLORS['Google Cloud'] : '#EA4335'} strokeWidth={3} /> </LineChart> </ChartWrapper> </div> ); };
 const CloudGcpVsWorkspace = ({ timeData, year }) => { return ( <div className="space-y-6"> <ChartWrapper title="Cloud Revenue: GCP vs. Workspace"> <BarChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatLargeNumber} /> <Tooltip content={<CurrencyTooltip />} /> <Legend /> <Bar dataKey="gcpRevenue" name="GCP Revenue" stackId="a" fill={CLOUD_COLORS['GCP']} /> <Bar dataKey="workspaceRevenue" name="Workspace Revenue" stackId="a" fill={CLOUD_COLORS['Workspace']} /> </BarChart> </ChartWrapper> <ChartWrapper title="Growth Rates: GCP vs. Workspace"> <LineChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatPercent} /> <Tooltip content={<PercentTooltip />} /> <Legend /> <Line type="monotone" dataKey="gcpGrowth" name="GCP Growth (YoY)" stroke={CLOUD_COLORS['GCP']} strokeWidth={3} /> <Line type="monotone" dataKey="workspaceGrowth" name="Workspace Growth (YoY)" stroke={CLOUD_COLORS['Workspace']} strokeWidth={3} /> </LineChart> </ChartWrapper> </div> ); };
 const CloudProfitability = ({ timeData, year }) => { return ( <div className="space-y-6"> <ChartWrapper title="Cloud Revenue vs. Cost of Revenue (CoR)"> <LineChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatLargeNumber} /> <Tooltip content={<CurrencyTooltip />} /> <Legend /> <Line type="monotone" dataKey="totalRevenue" name="Total Revenue" stroke="#34A853" strokeWidth={3} /> <Line type="monotone" dataKey="totalCostOfRevenue" name="Cost of Revenue" stroke="#EA4335" strokeWidth={3} /> </LineChart> </ChartWrapper> <ChartWrapper title="Cloud Gross Margin & Operating Margin"> <LineChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatPercent} /> <Tooltip content={<PercentTooltip />} /> <Legend /> <Line type="monotone" dataKey="grossMargin" name="Gross Margin %" stroke="#34A853" strokeWidth={3} /> <Line type="monotone" dataKey="opMargin" name="Operating Margin %" stroke="#4285F4" strokeWidth={3} /> </LineChart> </ChartWrapper> </div> ); };
 // NEW Cloud Spend Analysis
 const CloudSpendAnalysis = ({ timeData, year }) => { return ( <div className="space-y-6"> <ChartWrapper title="Cloud Operating Expenses (Spending)"> <BarChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatLargeNumber} /> <Tooltip content={<CurrencyTooltip />} /> <Legend /> <Bar dataKey="totalOpexRD" name="Research & Development" stackId="a" fill={OPEX_COLORS['Research & Development']} /> <Bar dataKey="totalOpexSM" name="Sales & Marketing" stackId="a" fill={OPEX_COLORS['Sales & Marketing']} /> </BarChart> </ChartWrapper> <ChartWrapper title="Cloud Spend as % of Cloud Revenue"> <LineChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatPercent} /> <Tooltip content={<PercentTooltip />} /> <Legend /> <Line type="monotone" dataKey="corAsPercentOfRevenue" name="Cost of Revenue %" stroke="#EA4335" strokeWidth={3} /> <Line type="monotone" dataKey="rdAsPercentOfRevenue" name="R&D %" stroke="#4285F4" strokeWidth={2} /> <Line type="monotone" dataKey="smAsPercentOfRevenue" name="S&M %" stroke="#34A853" strokeWidth={2} /> </LineChart> </ChartWrapper> </div> ); };
 // NEW Cloud KPIs
-const CloudKpis = ({ kpiData, year }) => { const currentYearData = kpiData.find(d => d.year === year) || kpiData[kpiData.length - 1]; return ( <div className="space-y-6"> <div className="grid grid-cols-1 md:grid-cols-3 gap-6"> <KpiCard title="Cloud Backlog" value={formatLargeNumber(currentYearData.backlog)} /> <KpiCard title="Total Customers" value={formatNumber(currentYearData.totalCustomers)} isCurrency={false} /> <KpiCard title="Revenue per Customer" value={formatLargeNumber(currentYearData.revPerCustomer)} /> </div> <ChartWrapper title="Cloud Backlog vs. Revenue"> <LineChart data={kpiData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis yAxisId="left" stroke="#34A853" tickFormatter={formatLargeNumber} /> <YAxis yAxisId="right" orientation="right" stroke="#4285F4" tickFormatter={formatLargeNumber} /> <Tooltip content={<CurrencyTooltip />} /> <Legend /> <Line yAxisId="left" type="monotone" dataKey="backlog" name="Backlog" stroke="#34A853" strokeWidth={3} /> <Line yAxisId="right" type="monotone" dataKey="revenue" name="Recognized Revenue" stroke="#4285F4" strokeWidth={2} strokeDasharray="5 5" /> </LineChart> </ChartWrapper> </div> ); };
+const CloudKpis = ({ kpiData, year }) => { const currentYearData = kpiData.find(d => d.year === year) || kpiData[kpiData.length - 1] || {}; return ( <div className="space-y-6"> <div className="grid grid-cols-1 md:grid-cols-3 gap-6"> <KpiCard title="Cloud Backlog" value={formatLargeNumber(currentYearData.backlog)} /> <KpiCard title="Total Customers" value={formatNumber(currentYearData.totalCustomers)} isCurrency={false} /> <KpiCard title="Revenue per Customer" value={formatLargeNumber(currentYearData.revPerCustomer)} /> </div> <ChartWrapper title="Cloud Backlog vs. Revenue"> <LineChart data={kpiData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis yAxisId="left" stroke="#34A853" tickFormatter={formatLargeNumber} /> <YAxis yAxisId="right" orientation="right" stroke="#4285F4" tickFormatter={formatLargeNumber} /> <Tooltip content={<CurrencyTooltip />} /> <Legend /> <Line yAxisId="left" type="monotone" dataKey="backlog" name="Backlog" stroke="#34A853" strokeWidth={3} /> <Line yAxisId="right" type="monotone" dataKey="revenue" name="Recognized Revenue" stroke="#4285F4" strokeWidth={2} strokeDasharray="5 5" /> </LineChart> </ChartWrapper> </div> ); };
 
 // Main Cloud Tab Component
 const GoogleCloudTab = ({ data, kpiData, year }) => {
@@ -485,7 +503,7 @@ const GoogleCloudTab = ({ data, kpiData, year }) => {
 };
 
 // --- 5. OTHER BETS TAB ---
-const OtherBetsTab = ({ data, year }) => { const [filter, setFilter] = useState('Waymo'); const timeData = useMemo(() => { return data .filter(d => d.item === filter) .map(d => ({...d, opLoss: d.operatingIncome * -1 })); }, [data, filter]); const currentYearData = timeData.find(d => d.year === year) || timeData[timeData.length - 1]; return ( <div className="space-y-6 animate-fadeIn"> <div className="flex justify-between items-center"> <h2 className="text-2xl font-semibold text-gray-900 mb-0">Other Bets ({year})</h2> <div className="flex space-x-2"> <FilterButton text="Waymo" value="Waymo" activeValue={filter} onClick={setFilter} /> <FilterButton text="Verily" value="Verily" activeValue={filter} onClick={setFilter} /> </div> </div> <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> <KpiCard title={`${filter} Operating Loss (Cash Burn)`} value={formatLargeNumber(currentYearData.operatingIncome)} isPositive={false} /> {filter === 'Waymo' && ( <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100"> <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">{year} Waymo Milestone</h3> <p className="text-xl font-bold text-gray-900 mt-2">{WAYMO_MILESTONES[year]}</p> </div> )} </div> <ChartWrapper title={`${filter} Operating Loss (Cash Burn)`}> <BarChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatLargeNumber} /> <Tooltip content={<CurrencyTooltip />} /> <Legend /> <Bar dataKey="opLoss" name="Operating Loss" fill={SEGMENT_COLORS['Other Bets']} /> </BarChart> </ChartWrapper> </div> ); };
+const OtherBetsTab = ({ data, year }) => { const [filter, setFilter] = useState('Waymo'); const timeData = useMemo(() => { return data .filter(d => d.item === filter) .map(d => ({...d, opLoss: d.operatingIncome * -1 })); }, [data, filter]); const currentYearData = timeData.find(d => d.year === year) || timeData[timeData.length - 1] || {}; return ( <div className="space-y-6 animate-fadeIn"> <div className="flex justify-between items-center"> <h2 className="text-2xl font-semibold text-gray-900 mb-0">Other Bets ({year})</h2> <div className="flex space-x-2"> <FilterButton text="Waymo" value="Waymo" activeValue={filter} onClick={setFilter} /> <FilterButton text="Verily" value="Verily" activeValue={filter} onClick={setFilter} /> </div> </div> <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> <KpiCard title={`${filter} Operating Loss (Cash Burn)`} value={formatLargeNumber(currentYearData.operatingIncome)} isPositive={false} /> {filter === 'Waymo' && ( <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100"> <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">{year} Waymo Milestone</h3> <p className="text-xl font-bold text-gray-900 mt-2">{WAYMO_MILESTONES[year]}</p> </div> )} </div> <ChartWrapper title={`${filter} Operating Loss (Cash Burn)`}> <BarChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatLargeNumber} /> <Tooltip content={<CurrencyTooltip />} /> <Legend /> <Bar dataKey="opLoss" name="Operating Loss" fill={SEGMENT_COLORS['Other Bets']} /> </BarChart> </ChartWrapper> </div> ); };
 
 // --- 6. EXPENSE & HEADCOUNT TAB ---
 const HeadcountExpenseDashboard = ({ financialData, headcountData, timeSeries, year }) => {
@@ -493,7 +511,7 @@ const HeadcountExpenseDashboard = ({ financialData, headcountData, timeSeries, y
   const opexTimeData = useMemo(() => { const years = [...new Set(financialData.map(d => d.year))].sort(); return years.map(y => { const yearData = financialData.filter(d => d.year === y); const totalRD = yearData.reduce((acc, i) => acc + (i.opex_rd || 0), 0); const totalSM = yearData.reduce((acc, i) => acc + (i.opex_sm || 0), 0); return { year: y, 'Research & Development': totalRD, 'Sales & Marketing': totalSM, }; }); }, [financialData]);
   const filteredOpexData = useMemo(() => { return opexTimeData.map(d => ({ year: d.year, cost: d[opExFilter] })); }, [opexTimeData, opExFilter]);
   const headcountTimeData = useMemo(() => { const years = [...new Set(headcountData.map(d => d.year))].sort(); return years.map(y => { const yearData = headcountData.filter(d => d.year === y); return { year: y, 'Google Services': yearData.find(d => d.segment === 'Google Services')?.headcount || 0, 'Google Cloud': yearData.find(d => d.segment === 'Google Cloud')?.headcount || 0, 'Other Bets': yearData.find(d => d.segment === 'Other Bets')?.headcount || 0, 'Corporate': yearData.find(d => d.segment === 'Corporate')?.headcount || 0, } }); }, [headcountData]);
-  const currentYearHeadcount = headcountTimeData.find(d => d.year === year) || headcountTimeData[headcountTimeData.length - 1];
+  const currentYearHeadcount = headcountTimeData.find(d => d.year === year) || headcountTimeData[headcountTimeData.length - 1] || { year: year };
   const totalHeadcount = Object.values(currentYearHeadcount).reduce((acc, val) => (typeof val === 'number' ? acc + val : acc), 0);
   return ( <div className="space-y-6 animate-fadeIn"> <h2 className="text-2xl font-semibold text-gray-900 mb-4">Expense & Headcount ({year})</h2> <KpiCard title="Total Headcount" value={formatNumber(totalHeadcount)} isCurrency={false} /> <div className="flex justify-between items-center mt-6"> <h3 className="text-xl font-semibold text-gray-800">Operating Expenses (OpEx)</h3> <div className="flex space-x-2"> <FilterButton text="Research & Development" value="Research & Development" activeValue={opExFilter} onClick={setOpExFilter} /> <FilterButton text="Sales & Marketing" value="Sales & Marketing" activeValue={opExFilter} onClick={setOpExFilter} /> </div> </div> <ChartWrapper title={`${opExFilter} Expense Trend`}> <BarChart data={filteredOpexData}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatLargeNumber} /> <Tooltip content={<CurrencyTooltip />} /> <Bar dataKey="cost" name={`${opExFilter} Cost`} fill={OPEX_COLORS[opExFilter]} /> </BarChart> </ChartWrapper> <ChartWrapper title="Total OpEx as % of Revenue"> <LineChart data={timeSeries}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatPercent} /> <Tooltip content={<PercentTooltip />} /> <Legend /> <Line type="monotone" dataKey="opexAsPercentOfRevenue" name="OpEx as % of Revenue" stroke="#EA4335" strokeWidth={3} /> </LineChart> </ChartWrapper> <h3 className="text-xl font-semibold text-gray-800 mt-6">Headcount by Segment</h3> <ChartWrapper title="Headcount Trend by Segment"> <AreaChart data={headcountTimeData} margin={{ top: 10, right: 30, left: 20, bottom: 0 }}> <CartesianGrid strokeDasharray="3 3" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatNumber} /> <Tooltip formatter={formatNumber} /> <Legend /> <Area type="monotone" dataKey="Google Services" stackId="1" stroke={SEGMENT_COLORS['Google Services']} fill={SEGMENT_COLORS['Google Services']} /> <Area type="monotone" dataKey="Google Cloud" stackId="1" stroke={SEGMENT_COLORS['Google Cloud']} fill={SEGMENT_COLORS['Google Cloud']} /> <Area type="monotone" dataKey="Other Bets" stackId="1" stroke={SEGMENT_COLORS['Other Bets']} fill={SEGMENT_COLORS['Other Bets']} /> <Area type="monotone" dataKey="Corporate" stackId="1" stroke={SEGMENT_COLORS['Corporate']} fill={SEGMENT_COLORS['Corporate']} /> </AreaChart> </ChartWrapper> </div> );
 };
@@ -538,7 +556,7 @@ const BalanceSheet = ({ data, year }) => {
       const equity = yearData.filter(d => d.type === 'Equity').reduce((acc, i) => acc + i.value, 0);
       const cash = yearData.find(d => d.item === 'Cash & Equivalents')?.value || 0;
       const debt = yearData.find(d => d.item === 'Long-Term Debt')?.value || 0;
-      return { year: y, Assets: assets, Liabilities: liabilities, Equity: equity, debtToEquity: debt / equity, cashRatio: cash / liabilities };
+      return { year: y, Assets: assets, Liabilities: liabilities, Equity: equity, debtToEquity: debt > 0 ? debt / equity : 0, cashRatio: liabilities > 0 ? cash / liabilities : 0 };
     });
   }, [data]);
   const currentYearData = timeData.find(d => d.year === year) || {};
@@ -588,7 +606,7 @@ const CashFlowStatement = ({ data, timeSeries, year }) => {
       };
     });
   }, [data, timeSeries]);
-  const currentYearData = timeData.find(d => d.year === year) || timeData[timeData.length - 1];
+  const currentYearData = timeData.find(d => d.year === year) || timeData[timeData.length - 1] || {};
   return (
     <div className="space-y-6">
       <h3 className="text-xl font-semibold text-gray-800">Consolidated Cash Flow ({year})</h3>
@@ -665,14 +683,15 @@ const FinancialRatios = ({ data, year }) => {
       </ChartWrapper>
 
       <ChartWrapper title="Leverage & Valuation Ratios (Time Series)">
-        <LineChart data={data}>
+        <LineChart data={data} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
           <XAxis dataKey="year" stroke="#666" />
-          <YAxis stroke="#666" tickFormatter={formatRatio} />
-          <Tooltip formatter={formatRatio} />
+          <YAxis yAxisId="left" stroke="#EA4335" tickFormatter={formatRatio} />
+          <YAxis yAxisId="right" orientation="right" stroke="#FBBC05" tickFormatter={formatRatio} />
+          <Tooltip formatter={(value, name) => name === 'Debt/Equity' ? formatRatio(value) : formatRatio(value)} />
           <Legend />
-          <Line type="monotone" dataKey="debtToEquity" name="Debt/Equity" stroke="#EA4335" strokeWidth={3} />
-          <Line type="monotone" dataKey="evToEbitda" name="EV/EBITDA" stroke="#FBBC05" strokeWidth={3} />
+          <Line yAxisId="left" type="monotone" dataKey="debtToEquity" name="Debt/Equity" stroke="#EA4335" strokeWidth={3} />
+          <Line yAxisId="right" type="monotone" dataKey="evToEbitda" name="EV/EBITDA" stroke="#FBBC05" strokeWidth={3} />
         </LineChart>
       </ChartWrapper>
     </div>
@@ -773,7 +792,7 @@ const SystemAccessTab = () => {
       const matchesStatus = filterStatus === 'All' || user.status === filterStatus;
       return matchesDept && matchesStatus;
     });
-  }, [filterDepartment, filterStatus]); // FIX: Changed dependency from financialData
+  }, [filterDepartment, filterStatus]);
 
   const kpiData = useMemo(() => {
     const totalUsers = MOCK_SYSTEM_ACCESS_DATA.length;
@@ -808,7 +827,7 @@ const SystemAccessTab = () => {
         <KpiCard title="Total Users" value={formatNumber(kpiData.totalUsers)} isCurrency={false} />
         <KpiCard title="Active Users" value={`${formatNumber(kpiData.activeUsers)} (${formatPercent(kpiData.activePercent)})`} isCurrency={false} />
         <KpiCard title="Total Annual License Cost" value={formatLargeNumber(kpiData.totalAnnualCost / 1000000)} />
-        <KpiCard title="Avg. Cost per Active User" value={formatLargeNumber((kpiData.totalAnnualCost / kpiData.activeUsers) / 1000000)} change="/ year" isPositive={false} />
+        <KpiCard title="Avg. Cost per Active User" value={formatLargeNumber((kpiData.totalAnnualCost / (kpiData.activeUsers || 1)) / 1000000)} change="/ year" isPositive={false} />
       </div>
 
       {/* Filters */}
@@ -971,7 +990,14 @@ const App = () => {
       case 'Segment Deep Dive':
         return <SegmentDeepDive data={MOCK_FINANCIAL_DATA} kpiData={MOCK_CLOUD_KPI_DATA} year={selectedYear} />;
       case '3 Financial Statements':
-        return <ThreeFinancialStatements financialData={MOCK_FINANCIAL_DATA} balanceSheetData={MOCK_BALANCE_SHEET_DATA} cashFlowData={MOCK_CASH_FLOW_DATA} timeSeries={timeSeriesData} year={selectedYear} ratioData={MOCK_RATIO_DATA} />;
+        return <ThreeFinancialStatements 
+                  financialData={MOCK_FINANCIAL_DATA} 
+                  balanceSheetData={MOCK_BALANCE_SHEET_DATA} 
+                  cashFlowData={MOCK_CASH_FLOW_DATA} 
+                  timeSeries={timeSeriesData} 
+                  year={selectedYear} 
+                  ratioData={MOCK_RATIO_DATA} 
+                />;
       case 'Competitive Analysis':
         return <CloudCompetitiveAnalysis />;
       case 'Expense & Headcount':
