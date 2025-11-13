@@ -1,81 +1,355 @@
 import React, { useState, useMemo } from 'react';
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Tooltip, Legend,
-  XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell,
+  XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell, ComposedChart,
 } from 'recharts';
 
-// --- MOCK DATA ---
-// In a real app, this would come from an API
-const MOCK_BUDGET_DATA = [
-  // 2023 Data
-  { id: 1, year: 2023, organization: 'R&D', spendType: 'Salaries', budgeted: 1200000, actual: 1150000 },
-  { id: 2, year: 2023, organization: 'R&D', spendType: 'Software', budgeted: 300000, actual: 280000 },
-  { id: 3, year: 2023, organization: 'Marketing', spendType: 'Advertising', budgeted: 800000, actual: 810000 },
-  { id: 4, year: 2023, organization: 'Marketing', spendType: 'Salaries', budgeted: 400000, actual: 400000 },
-  { id: 5, year: 2023, organization: 'Sales', spendType: 'Salaries', budgeted: 700000, actual: 720000 },
-  { id: 6, year: 2023, organization: 'Sales', spendType: 'T&E', budgeted: 150000, actual: 130000 },
-  { id: 7, year: 2023, organization: 'HR', spendType: 'Salaries', budgeted: 250000, actual: 250000 },
-  
-  // 2024 Data
-  { id: 8, year: 2024, organization: 'R&D', spendType: 'Salaries', budgeted: 1300000, actual: 1280000 },
-  { id: 9, year: 2024, organization: 'R&D', spendType: 'Software', budgeted: 350000, actual: 360000 },
-  { id: 10, year: 2024, organization: 'R&D', spendType: 'Hardware', budgeted: 100000, actual: 90000 },
-  { id: 11, year: 2024, organization: 'Marketing', spendType: 'Advertising', budgeted: 900000, actual: 950000 },
-  { id: 12, year: 2024, organization: 'Marketing', spendType: 'Salaries', budgeted: 420000, actual: 420000 },
-  { id: 13, year: 2024, organization: 'Sales', spendType: 'Salaries', budgeted: 750000, actual: 750000 },
-  { id: 14, year: 2024, organization: 'Sales', spendType: 'T&E', budgeted: 160000, actual: 170000 },
-  { id: 15, year: 2024, organization: 'HR', spendType: 'Salaries', budgeted: 260000, actual: 260000 },
-  { id: 16, year: 2024, organization: 'HR', spendType: 'Recruiting', budgeted: 100000, actual: 120000 },
+// --- MOCK DATA (ALPHABET INC. STRUCTURE) ---
+// Based on real public reporting trends. All figures are in *Millions of USD*.
+const MOCK_FINANCIAL_DATA = [
+  // --- 2023 ---
+  { id: 1, year: 2023, segment: 'Google Services', item: 'Google Search', revenue: 175000, operatingIncome: 65000 },
+  { id: 2, year: 2023, segment: 'Google Services', item: 'YouTube Ads', revenue: 31500, operatingIncome: 7000 },
+  { id: 3, year: 2023, segment: 'Google Services', item: 'Google Network', revenue: 32000, operatingIncome: 8000 },
+  { id: 4, year: 2023, segment: 'Google Services', item: 'Google Other', revenue: 33000, operatingIncome: 4000 },
+  { id: 5, year: 2023, segment: 'Google Cloud', item: 'Google Cloud', revenue: 33000, operatingIncome: -500 }, // Cloud was near breakeven/loss
+  { id: 6, year: 2023, segment: 'Other Bets', item: 'Other Bets', revenue: 1200, operatingIncome: -5000 },
+  { id: 7, year: 2023, segment: 'Corporate Costs', item: 'Corporate', revenue: 0, operatingIncome: -11000 },
 
-  // 2025 Data
-  { id: 17, year: 2025, organization: 'R&D', spendType: 'Salaries', budgeted: 1400000, actual: 1390000 },
-  { id: 18, year: 2025, organization: 'R&D', spendType: 'Software', budgeted: 400000, actual: 390000 },
-  { id: 19, year: 2025, organization: 'R&D', spendType: 'Hardware', budgeted: 150000, actual: 120000 },
-  { id: 20, year: 2025, organization: 'Marketing', spendType: 'Advertising', budgeted: 1000000, actual: 980000 },
-  { id: 21, year: 2025, organization: 'Marketing', spendType: 'Salaries', budgeted: 450000, actual: 450000 },
-  { id: 22, year: 2025, organization: 'Sales', spendType: 'Salaries', budgeted: 800000, actual: 810000 },
-  { id: 23, year: 2025, organization: 'Sales', spendType: 'T&E', budgeted: 180000, actual: 170000 },
-  { id: 24, year: 2025, organization: 'HR', spendType: 'Salaries', budgeted: 270000, actual: 270000 },
-  { id: 25, year: 2025, organization: 'HR', spendType: 'Recruiting', budgeted: 120000, actual: 100000 },
+  // --- 2024 ---
+  { id: 8, year: 2024, segment: 'Google Services', item: 'Google Search', revenue: 192000, operatingIncome: 72000 },
+  { id: 9, year: 2024, segment: 'Google Services', item: 'YouTube Ads', revenue: 35000, operatingIncome: 8500 },
+  { id: 10, year: 2024, segment: 'Google Services', item: 'Google Network', revenue: 33000, operatingIncome: 8200 },
+  { id: 11, year: 2024, segment: 'Google Services', item: 'Google Other', revenue: 38000, operatingIncome: 5000 },
+  { id: 12, year: 2024, segment: 'Google Cloud', item: 'Google Cloud', revenue: 42000, operatingIncome: 1200 }, // Cloud becomes profitable
+  { id: 13, year: 2024, segment: 'Other Bets', item: 'Other Bets', revenue: 1500, operatingIncome: -4500 },
+  { id: 14, year: 2024, segment: 'Corporate Costs', item: 'Corporate', revenue: 0, operatingIncome: -12000 },
+
+  // --- 2025 (Projected) ---
+  { id: 15, year: 2025, segment: 'Google Services', item: 'Google Search', revenue: 210000, operatingIncome: 80000 },
+  { id: 16, year: 2025, segment: 'Google Services', item: 'YouTube Ads', revenue: 40000, operatingIncome: 10000 },
+  { id: 17, year: 2025, segment: 'Google Services', item: 'Google Network', revenue: 34000, operatingIncome: 8500 },
+  { id: 18, year: 2025, segment: 'Google Services', item: 'Google Other', revenue: 42000, operatingIncome: 6000 },
+  { id: 19, year: 2025, segment: 'Google Cloud', item: 'Google Cloud', revenue: 53000, operatingIncome: 3000 }, // Cloud profitability grows
+  { id: 20, year: 2025, segment: 'Other Bets', item: 'Other Bets', revenue: 2000, operatingIncome: -4000 },
+  { id: 21, year: 2025, segment: 'Corporate Costs', item: 'Corporate', revenue: 0, operatingIncome: -12500 },
 ];
 
-const uniqueYears = [...new Set(MOCK_BUDGET_DATA.map(item => item.year))].sort((a, b) => b - a);
+const uniqueYears = [...new Set(MOCK_FINANCIAL_DATA.map(item => item.year))].sort((a, b) => b - a);
+const SEGMENT_COLORS = {
+  'Google Services': '#4285F4', // Google Blue
+  'Google Cloud': '#34A853',    // Google Green
+  'Other Bets': '#FBBC05',       // Google Yellow
+  'Corporate Costs': '#EA4335', // Google Red
+};
+const SERVICES_COLORS = {
+  'Google Search': '#4285F4',
+  'YouTube Ads': '#FF0000',
+  'Google Network': '#FBBC05',
+  'Google Other': '#34A853',
+}
 
 // --- HELPER FUNCTIONS & COMPONENTS ---
 
-// Helper to format currency
+// Formats large numbers (in millions) to simplified B / M
+const formatLargeNumber = (value) => {
+  const valInMillions = value;
+  if (Math.abs(valInMillions) >= 1000) {
+    return `$${(valInMillions / 1000).toFixed(1)}B`;
+  }
+  return `$${valInMillions.toFixed(0)}M`;
+};
+
+// Formats as currency (in millions)
 const formatCurrency = (value) => new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
   minimumFractionDigits: 0,
   maximumFractionDigits: 0,
-}).format(value);
+}).format(value * 1000000); // Convert millions back to full number for formatter
 
-// Helper to format percentages
 const formatPercent = (value) => `${(value * 100).toFixed(1)}%`;
 
-// Reusable KPI Card Component
-const KpiCard = ({ title, value, change, isPositive, isCurrency = true }) => (
+const KpiCard = ({ title, value, change, isPositive }) => (
   <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
     <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">{title}</h3>
-    <p className="text-3xl font-bold text-gray-900 mt-2">
-      {isCurrency ? formatCurrency(value) : value}
-    </p>
-    {change !== undefined && (
+    <p className="text-3xl font-bold text-gray-900 mt-2">{value}</p>
+    {change && (
       <p className={`text-sm font-medium mt-1 ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-        {isPositive ? '▲' : '▼'} {change}
+        {isPositive ? '▲' : '▼'} {change} YoY
       </p>
     )}
   </div>
 );
 
-// Reusable Chart Container
-const ChartWrapper = ({ title, children }) => (
-  <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 h-96">
+const ChartWrapper = ({ title, children, height = "h-96" }) => (
+  <div className={`bg-white p-6 rounded-lg shadow-sm border border-gray-100 ${height}`}>
     <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
     <ResponsiveContainer width="100%" height="90%">
       {children}
     </ResponsiveContainer>
+  </div>
+);
+
+// --- 1. OVERVIEW DASHBOARD COMPONENT ---
+
+const OverviewDashboard = ({ data, timeSeries, year, onYearChange, years }) => {
+  
+  // A. KPI Calculations for Selected Year
+  const kpiData = useMemo(() => {
+    const currentYearData = timeSeries.find(d => d.year === year);
+    if (!currentYearData) return {};
+    return {
+      totalRevenue: currentYearData.totalRevenue,
+      operatingIncome: currentYearData.totalOpIncome,
+      opMargin: currentYearData.opMargin,
+      revenueGrowth: currentYearData.revenueGrowth,
+      opIncomeGrowth: currentYearData.opIncomeGrowth,
+    };
+  }, [timeSeries, year]);
+
+  // B. Data for Segment Charts (Pie & Bar)
+  const segmentData = useMemo(() => {
+    const yearData = data.filter(d => d.year === year);
+    const segmentMap = new Map();
+    
+    for (const item of yearData) {
+      if (item.segment === 'Corporate Costs') continue; // Exclude from revenue pie
+      if (!segmentMap.has(item.segment)) {
+        segmentMap.set(item.segment, { name: item.segment, revenue: 0, operatingIncome: 0 });
+      }
+      const seg = segmentMap.get(item.segment);
+      seg.revenue += item.revenue;
+      seg.operatingIncome += item.operatingIncome;
+    }
+    return Array.from(segmentMap.values());
+  }, [data, year]);
+
+  // C. Data for OpIncome chart (includes Corporate Costs)
+  const opIncomeSegmentData = useMemo(() => {
+    const yearData = data.filter(d => d.year === year);
+    const segmentMap = new Map();
+    
+    for (const item of yearData) {
+      const segmentName = item.segment;
+      if (!segmentMap.has(segmentName)) {
+        segmentMap.set(segmentName, { name: segmentName, operatingIncome: 0 });
+      }
+      segmentMap.get(segmentName).operatingIncome += item.operatingIncome;
+    }
+    return Array.from(segmentMap.values());
+  }, [data, year]);
+
+  return (
+    <div className="space-y-6 animate-fadeIn">
+      {/* --- FILTERS --- */}
+      <div className="flex justify-end">
+        <select
+          value={year}
+          onChange={(e) => onYearChange(parseInt(e.target.value))}
+          className="bg-white border border-gray-300 rounded-md shadow-sm py-2 px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          {years.map(y => <option key={y} value={y}>{y} Performance</option>)}
+        </select>
+      </div>
+
+      {/* --- KPIs --- */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <KpiCard 
+          title="Total Revenue" 
+          value={formatLargeNumber(kpiData.totalRevenue)}
+          change={formatPercent(kpiData.revenueGrowth)}
+          isPositive={kpiData.revenueGrowth >= 0}
+        />
+        <KpiCard 
+          title="Operating Income" 
+          value={formatLargeNumber(kpiData.operatingIncome)} 
+          change={formatPercent(kpiData.opIncomeGrowth)}
+          isPositive={kpiData.opIncomeGrowth >= 0}
+        />
+        <KpiCard 
+          title="Operating Margin" 
+          value={formatPercent(kpiData.opMargin)}
+        />
+      </div>
+
+      {/* --- CHARTS --- */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* TIME SERIES CHART (CFO'S VIEW) */}
+        <div className="lg:col-span-3">
+          <ChartWrapper title="Key Performance Metrics (YoY)">
+            <ComposedChart data={timeSeries} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+              <XAxis dataKey="year" stroke="#666" />
+              <YAxis yAxisId="left" stroke="#666" tickFormatter={val => `${val.toFixed(0)}%`} label={{ value: 'YoY Growth %', angle: -90, position: 'insideLeft', fill: '#666' }} />
+              <YAxis yAxisId="right" orientation="right" stroke="#666" tickFormatter={val => `${val.toFixed(0)}%`} label={{ value: 'Margin %', angle: 90, position: 'insideRight', fill: '#666' }} />
+              <Tooltip formatter={(value, name) => `${value.toFixed(1)}%`} />
+              <Legend />
+              <Bar yAxisId="left" dataKey="Revenue Growth" fill="#a0aec0" />
+              <Line yAxisId="right" type="monotone" dataKey="Operating Margin" stroke="#4285F4" strokeWidth={3} activeDot={{ r: 8 }} />
+            </ComposedChart>
+          </ChartWrapper>
+        </div>
+
+        {/* REVENUE BY SEGMENT */}
+        <div className="lg:col-span-1">
+          <ChartWrapper title={`Revenue by Segment (${year})`}>
+            <PieChart>
+              <Pie data={segmentData} dataKey="revenue" nameKey="name" cx="50%" cy="50%" outerRadius={80} fill="#8884d8">
+                {segmentData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={SEGMENT_COLORS[entry.name]} />
+                ))}
+              </Pie>
+              <Tooltip formatter={formatLargeNumber} />
+              <Legend />
+            </PieChart>
+          </ChartWrapper>
+        </div>
+
+        {/* OP. INCOME BY SEGMENT (THE MONEY STORY) */}
+        <div className="lg:col-span-2">
+          <ChartWrapper title={`Operating Income by Segment (${year})`}>
+            <BarChart data={opIncomeSegmentData} layout="vertical" margin={{ left: 30 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+              <XAxis type="number" stroke="#666" tickFormatter={formatLargeNumber} />
+              <YAxis dataKey="name" type="category" stroke="#666" width={100} />
+              <Tooltip formatter={formatLargeNumber} />
+              <Bar dataKey="operatingIncome">
+                {opIncomeSegmentData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.operatingIncome >= 0 ? SEGMENT_COLORS[entry.name] : '#EA4335'} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ChartWrapper>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- 2. SEGMENT DEEP DIVE COMPONENT ---
+
+const SegmentDeepDive = ({ data, year }) => {
+  const yearData = useMemo(() => data.filter(d => d.year === year), [data, year]);
+  
+  // Data for Google Services Breakdown
+  const servicesData = useMemo(() => {
+    return yearData
+      .filter(d => d.segment === 'Google Services')
+      .map(d => ({ ...d, margin: d.revenue > 0 ? d.operatingIncome / d.revenue : 0 }));
+  }, [yearData]);
+
+  // Data for Google Cloud (just one bar, but shows growth trend)
+  const cloudData = useMemo(() => {
+    return data
+      .filter(d => d.segment === 'Google Cloud')
+      .map(d => ({ 
+        year: d.year, 
+        revenue: d.revenue, 
+        operatingIncome: d.operatingIncome, 
+        margin: d.revenue > 0 ? (d.operatingIncome / d.revenue) * 100 : 0
+      }));
+  }, [data]);
+
+  return (
+    <div className="space-y-6 animate-fadeIn">
+      <h2 className="text-2xl font-semibold text-gray-900 mb-0">Segment Deep Dive for {year}</h2>
+      
+      {/* --- GOOGLE SERVICES --- */}
+      <div className="p-6 rounded-lg bg-white shadow-sm border border-gray-100">
+        <h3 className="text-xl font-semibold text-gray-800 mb-4">Google Services</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Chart */}
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={servicesData} margin={{ top: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                <XAxis dataKey="item" stroke="#666" />
+                <YAxis stroke="#666" tickFormatter={formatLargeNumber} />
+                <Tooltip formatter={formatLargeNumber} />
+                <Legend />
+                <Bar dataKey="revenue" name="Revenue">
+                  {servicesData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={SERVICES_COLORS[entry.item]} />
+                  ))}
+                </Bar>
+                <Bar dataKey="operatingIncome" name="Op. Income" fill="#a0aec0" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left text-gray-700">
+              <thead className="text-xs text-gray-500 uppercase bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-4 py-3">Item</th>
+                  <th scope="col" className="px-4 py-3 text-right">Revenue</th>
+                  <th scope="col" className="px-4 py-3 text-right">Op. Income</th>
+                  <th scope="col" className="px-4 py-3 text-right">Margin</th>
+                </tr>
+              </thead>
+              <tbody>
+                {servicesData.map(d => (
+                  <tr key={d.id} className="bg-white border-b last:border-b-0 hover:bg-gray-50">
+                    <td className="px-4 py-3 font-medium">{d.item}</td>
+                    <td className="px-4 py-3 text-right font-mono">{formatLargeNumber(d.revenue)}</td>
+                    <td className="px-4 py-3 text-right font-mono">{formatLargeNumber(d.operatingIncome)}</td>
+                    <td className="px-4 py-3 text-right font-mono">{formatPercent(d.margin)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* --- GOOGLE CLOUD --- */}
+      <div className="p-6 rounded-lg bg-white shadow-sm border border-gray-100">
+        <h3 className="text-xl font-semibold text-gray-800 mb-4">Google Cloud (Trend)</h3>
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={cloudData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+              <XAxis dataKey="year" stroke="#666" />
+              <YAxis yAxisId="left" stroke="#666" tickFormatter={formatLargeNumber} />
+              <YAxis yAxisId="right" orientation="right" stroke="#666" tickFormatter={val => `${val.toFixed(0)}%`} />
+              <Tooltip formatter={(value, name) => name === 'Margin' ? `${value.toFixed(1)}%` : formatLargeNumber(value)} />
+              <Legend />
+              <Bar yAxisId="left" dataKey="revenue" name="Revenue" fill={SEGMENT_COLORS['Google Cloud']} />
+              <Line yAxisId="right" type="monotone" dataKey="margin" name="Margin" stroke="#EA4335" strokeWidth={2} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+    </div>
+  );
+};
+
+// --- 3. EXPENSE & HEADCOUNT (PLACEHOLDER) ---
+
+const HeadcountDashboard = ({ year }) => (
+  <div className="space-y-6 animate-fadeIn">
+    <h2 className="text-2xl font-semibold text-gray-900 mb-4">Expense & Headcount for {year}</h2>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <KpiCard title="Total Headcount" value="182,502" change="-1.5%" isPositive={false} isCurrency={false} />
+      <KpiCard title="Stock-Based Comp (SBC)" value={formatLargeNumber(22500)} change="+8.2%" isPositive={false} />
+    </div>
+    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">Headcount by Segment (Illustrative)</h3>
+      {/* Placeholder for chart */}
+      <div className="h-64 flex items-center justify-center bg-gray-50 rounded-md">
+        <p className="text-gray-500">Headcount by Segment Chart</p>
+      </div>
+    </div>
+    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">Operating Expenses Breakdown</h3>
+      {/* Placeholder for table */}
+      <div className="h-48 flex items-center justify-center bg-gray-50 rounded-md">
+        <p className="text-gray-500">R&D, S&M, G&A Expense Table</p>
+      </div>
+    </div>
   </div>
 );
 
@@ -87,259 +361,72 @@ const TabContent = ({ tabName }) => (
   </div>
 );
 
-// --- DASHBOARD-SPECIFIC COMPONENTS ---
-
-/**
- * 1. OVERVIEW DASHBOARD COMPONENT
- */
-const OverviewDashboard = ({ data, timeSeries, year, onYearChange, years }) => {
-  // Memoized analytics based on the selected year
-  const yearData = useMemo(() => data.filter(d => d.year === year), [data, year]);
-
-  // A. KPI Calculations
-  const kpiData = useMemo(() => {
-    const totalBudgeted = yearData.reduce((acc, d) => acc + d.budgeted, 0);
-    const totalActual = yearData.reduce((acc, d) => acc + d.actual, 0);
-    const variance = totalBudgeted - totalActual;
-    const variancePercent = variance / totalBudgeted;
-    
-    // Find current and previous year time series data
-    const currentYearStats = timeSeries.find(t => t.year === year);
-    
-    return {
-      totalBudgeted,
-      totalActual,
-      variance,
-      variancePercent,
-      yoyNominal: currentYearStats ? currentYearStats.nominalIncrease : 0,
-      yoyPercent: currentYearStats ? currentYearStats.percentIncrease : 0,
-    };
-  }, [yearData, timeSeries, year]);
-
-  // B. Budget vs. Actual by Organization (Bar Chart)
-  const orgData = useMemo(() => {
-    const orgMap = new Map();
-    yearData.forEach(d => {
-      if (!orgMap.has(d.organization)) {
-        orgMap.set(d.organization, { name: d.organization, budgeted: 0, actual: 0 });
-      }
-      const org = orgMap.get(d.organization);
-      org.budgeted += d.budgeted;
-      org.actual += d.actual;
-    });
-    return Array.from(orgMap.values());
-  }, [yearData]);
-
-  // C. Spend Type Breakdown (Donut Chart)
-  const spendTypeData = useMemo(() => {
-    const spendMap = new Map();
-    yearData.forEach(d => {
-      if (!spendMap.has(d.spendType)) {
-        spendMap.set(d.spendType, { name: d.spendType, value: 0 });
-      }
-      spendMap.get(d.spendType).value += d.actual;
-    });
-    return Array.from(spendMap.values());
-  }, [yearData]);
-
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
-
-  return (
-    <div className="space-y-6 animate-fadeIn">
-      {/* --- FILTERS --- */}
-      <div className="flex justify-end">
-        <select
-          value={year}
-          onChange={(e) => onYearChange(parseInt(e.target.value))}
-          className="bg-white border border-gray-300 rounded-md shadow-sm py-2 px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        >
-          {years.map(y => <option key={y} value={y}>{y} Dashboard</option>)}
-        </select>
-      </div>
-
-      {/* --- KPIs --- */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <KpiCard 
-          title="Total Budgeted" 
-          value={kpiData.totalBudgeted}
-          change={`${formatCurrency(kpiData.yoyNominal)} YoY`}
-          isPositive={kpiData.yoyNominal >= 0}
-        />
-        <KpiCard 
-          title="Total Actual Spend" 
-          value={kpiData.totalActual} 
-          change={`${formatPercent(kpiData.yoyPercent)} YoY`}
-          isPositive={kpiData.yoyPercent >= 0}
-        />
-        <KpiCard 
-          title="Budget Variance" 
-          value={kpiData.variance} 
-          change={`${formatPercent(kpiData.variancePercent)} of Budget`}
-          isPositive={kpiData.variance >= 0}
-        />
-      </div>
-
-      {/* --- CHARTS --- */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* TIME SERIES CHART (Your specific request) */}
-        <div className="lg:col-span-3">
-          <ChartWrapper title="Budget Over Time (YoY)">
-            <LineChart data={timeSeries} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-              <XAxis dataKey="year" stroke="#666" />
-              <YAxis yAxisId="left" stroke="#666" tickFormatter={val => `$${val/1000000}M`} />
-              <YAxis yAxisId="right" orientation="right" stroke="#666" tickFormatter={val => `${val}%`} />
-              <Tooltip 
-                formatter={(value, name) => {
-                  if (name === 'Total Budget') return formatCurrency(value);
-                  if (name === '% Increase') return `${value.toFixed(1)}%`;
-                  if (name === 'Nominal Increase') return formatCurrency(value);
-                  return value;
-                }}
-              />
-              <Legend />
-              <Line yAxisId="left" type="monotone" dataKey="Total Budget" stroke="#8884d8" strokeWidth={2} activeDot={{ r: 8 }} />
-              <Line yAxisId="left" type="monotone" dataKey="Nominal Increase" stroke="#82ca9d" strokeWidth={2} />
-              <Line yAxisId="right" type="monotone" dataKey="% Increase" stroke="#ffc658" strokeWidth={2} />
-            </LineChart>
-          </ChartWrapper>
-        </div>
-
-        {/* ORG BREAKDOWN */}
-        <div className="lg:col-span-2">
-          <ChartWrapper title={`Budget vs. Actual by Organization (${year})`}>
-            <BarChart data={orgData} layout="vertical" margin={{ left: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-              <XAxis type="number" stroke="#666" tickFormatter={val => `$${val/1000}K`} />
-              <YAxis dataKey="name" type="category" stroke="#666" width={80} />
-              <Tooltip formatter={formatCurrency} />
-              <Legend />
-              <Bar dataKey="budgeted" fill="#8884d8" />
-              <Bar dataKey="actual" fill="#82ca9d" />
-            </BarChart>
-          </ChartWrapper>
-        </div>
-
-        {/* SPEND TYPE BREAKDOWN */}
-        <div className="lg:col-span-1">
-          <ChartWrapper title={`Actual Spend by Type (${year})`}>
-            <PieChart>
-              <Pie
-                data={spendTypeData}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={80}
-                fill="#8884d8"
-                paddingAngle={5}
-              >
-                {spendTypeData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={formatCurrency} />
-              <Legend layout="vertical" align="right" verticalAlign="middle" />
-            </PieChart>
-          </ChartWrapper>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-/**
- * 2. REPORTING TABLE COMPONENT
- */
-const ReportingTable = ({ data, year }) => {
-  const yearData = useMemo(() => data.filter(d => d.year === year), [data, year]);
-
-  return (
-    <div className="animate-fadeIn">
-      <h2 className="text-2xl font-semibold text-gray-900 mb-4">Detailed Report for {year}</h2>
-      <div className="overflow-x-auto bg-white rounded-lg shadow-sm border border-gray-100">
-        <table className="w-full min-w-max text-sm text-left text-gray-700">
-          <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th scope="col" className="px-6 py-3">Organization</th>
-              <th scope="col" className="px-6 py-3">Spend Type</th>
-              <th scope="col" className="px-6 py-3 text-right">Budgeted</th>
-              <th scope="col" className="px-6 py-3 text-right">Actual</th>
-              <th scope="col" className="px-6 py-3 text-right">Variance</th>
-            </tr>
-          </thead>
-          <tbody>
-            {yearData.map((d) => {
-              const variance = d.budgeted - d.actual;
-              return (
-                <tr key={d.id} className="bg-white border-b last:border-b-0 hover:bg-gray-50">
-                  <td className="px-6 py-4 font-medium text-gray-900">{d.organization}</td>
-                  <td className="px-6 py-4">{d.spendType}</td>
-                  <td className="px-6 py-4 text-right font-mono">{formatCurrency(d.budgeted)}</td>
-                  <td className="px-6 py-4 text-right font-mono">{formatCurrency(d.actual)}</td>
-                  <td className={`px-6 py-4 text-right font-mono ${variance < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    {formatCurrency(variance)}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
-
 
 // --- MAIN APP COMPONENT ---
 
 const App = () => {
   // State
   const [activeTab, setActiveTab] = useState('Overview');
-  const tabs = ['Overview', 'System Access', 'Budget Planning', 'Reporting'];
+  const tabs = ['Overview', 'Segment Deep Dive', 'Expense & Headcount', 'System Access'];
   const [selectedYear, setSelectedYear] = useState(uniqueYears[0]); // Default to newest year
 
   // --- TOP-LEVEL ANALYTICS ---
-  // This calculates the data for your Time Series chart.
+  // Calculates aggregated financial data for all years
   const timeSeriesData = useMemo(() => {
-    const years = [...new Set(MOCK_BUDGET_DATA.map(d => d.year))].sort();
-    let lastYearBudget = 0;
-    
-    return years.map(year => {
-      const totalBudget = MOCK_BUDGET_DATA
-        .filter(d => d.year === year)
-        .reduce((acc, d) => acc + d.budgeted, 0);
-      
-      const nominalIncrease = lastYearBudget === 0 ? 0 : totalBudget - lastYearBudget;
-      const percentIncrease = lastYearBudget === 0 ? 0 : (nominalIncrease / lastYearBudget) * 100;
-      
-      lastYearBudget = totalBudget; // Set for next iteration
+    const years = [...new Set(MOCK_FINANCIAL_DATA.map(d => d.year))].sort();
+    const yearlyData = new Map();
+
+    // Aggregate by year
+    for (const item of MOCK_FINANCIAL_DATA) {
+      if (!yearlyData.has(item.year)) {
+        yearlyData.set(item.year, { year: item.year, totalRevenue: 0, totalOpIncome: 0 });
+      }
+      const yearData = yearlyData.get(item.year);
+      yearData.totalRevenue += item.revenue;
+      yearData.totalOpIncome += item.operatingIncome;
+    }
+
+    const sortedData = Array.from(yearlyData.values()).sort((a, b) => a.year - b.year);
+
+    // Calculate YoY Growth and Margins
+    let lastYearRevenue = 0;
+    let lastYearOpIncome = 0;
+
+    return sortedData.map(d => {
+      const revenueGrowth = lastYearRevenue === 0 ? 0 : (d.totalRevenue - lastYearRevenue) / lastYearRevenue;
+      const opIncomeGrowth = lastYearOpIncome === 0 ? 0 : (d.totalOpIncome - lastYearOpIncome) / lastYearOpIncome;
+      const opMargin = d.totalRevenue === 0 ? 0 : d.totalOpIncome / d.totalRevenue;
+
+      lastYearRevenue = d.totalRevenue;
+      lastYearOpIncome = d.totalOpIncome;
       
       return {
-        year,
-        'Total Budget': totalBudget,
-        'Nominal Increase': nominalIncrease,
-        '% Increase': percentIncrease,
+        year: d.year,
+        totalRevenue: d.totalRevenue,
+        totalOpIncome: d.totalOpIncome,
+        'Revenue Growth': revenueGrowth * 100,
+        'Operating Margin': opMargin * 100,
+        revenueGrowth, // raw value for KPIs
+        opIncomeGrowth, // raw value for KPIs
+        opMargin, // raw value for KPIs
       };
     });
-  }, [MOCK_BUDGET_DATA]); // This only runs once
+  }, []); // Runs once on mount
 
   return (
     // Main container
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 sm:p-6 font-sans">
       
-      {/* Budget Card Container */}
+      {/* Main Card Container (Wider) */}
       <div className="w-full max-w-7xl bg-white shadow-2xl rounded-xl border-t-4 border-indigo-500 overflow-hidden">
         
         {/* Header Section */}
         <header className="text-center p-8 pb-6">
           <h1 className="text-5xl font-extrabold text-gray-900 tracking-tight mb-2">
-            Analytics Dashboard
+            Alphabet Inc.
           </h1>
           <p className="text-lg text-indigo-600 font-medium">
-            Organizational Budget Tracker
+            Financial Performance Dashboard
           </p>
         </header>
 
@@ -347,7 +434,7 @@ const App = () => {
         <div className="flex flex-col sm:flex-row">
 
           {/* Tab Navigation */}
-          <nav className="flex-shrink-0 sm:w-56 sm:p-8 sm:pt-0 sm:pr-4 p-4 pb-0 sm:pb-4">
+          <nav className="flex-shrink-0 sm:w-60 sm:p-8 sm:pt-0 sm:pr-4 p-4 pb-0 sm:pb-4">
             <div className="flex flex-row sm:flex-col border-b sm:border-b-0 sm:border-r border-gray-200 overflow-x-auto sm:overflow-visible">
               {tabs.map((tab) => (
                 <button
@@ -368,25 +455,29 @@ const App = () => {
             </div>
           </nav>
           
-          {/* Conditional Content Area: Now much wider */}
-          <main className="flex-1 p-4 pt-6 sm:p-8 sm:pt-0 bg-gray-50/50 min-h-[600px]">
+          {/* Conditional Content Area */}
+          <main className="flex-1 p-4 pt-6 sm:p-8 sm:pt-0 bg-gray-50/50 min-h-[800px]">
             {activeTab === 'Overview' && (
               <OverviewDashboard 
-                data={MOCK_BUDGET_DATA}
+                data={MOCK_FINANCIAL_DATA}
                 timeSeries={timeSeriesData}
                 year={selectedYear}
                 onYearChange={setSelectedYear}
                 years={uniqueYears}
               />
             )}
-            {activeTab === 'Reporting' && (
-              <ReportingTable 
-                data={MOCK_BUDGET_DATA} 
+            {activeTab === 'Segment Deep Dive' && (
+              <SegmentDeepDive 
+                data={MOCK_FINANCIAL_DATA} 
+                year={selectedYear} 
+              />
+            )}
+            {activeTab === 'Expense & Headcount' && (
+              <HeadcountDashboard 
                 year={selectedYear} 
               />
             )}
             {activeTab === 'System Access' && <TabContent tabName="System Access" />}
-            {activeTab === 'Budget Planning' && <TabContent tabName="Budget Planning" />}
           </main>
         </div>
       </div>
