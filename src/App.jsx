@@ -39,9 +39,9 @@ const SummaryContent = () => (
 
 // The main component for the Budget application
 const App = () => {
-  // Add state to track the active tab, default to 'Summary'
-  const [activeTab, setActiveTab] = useState('Summary');
-  const tabs = ['Summary', 'tab1', 'tab2', 'tab3', 'tab4'];
+  // Add state to track the active tab, default to 'Overview'
+  const [activeTab, setActiveTab] = useState('Overview');
+  const tabs = ['Overview', 'System Access', 'Budget Planning', 'Reporting'];
 
   return (
     // Main container
@@ -90,14 +90,13 @@ const App = () => {
           
           {/* Conditional Content Area: Now has its own padding */}
           <main className="flex-1 p-4 pt-6 sm:p-8 sm:pt-0">
-            {/* Content for Summary Tab */}
-            {activeTab === 'Summary' && <SummaryContent />}
+            {/* Content for Overview Tab */}
+            {activeTab === 'Overview' && <SummaryContent />}
 
             {/* Placeholder Content for other tabs */}
-            {activeTab === 'tab1' && <TabContent tabName="Tab 1" />}
-            {activeTab === 'tab2' && <TabContent tabName="Tab 2" />}
-            {activeTab === 'tab3' && <TabContent tabName="Tab 3" />}
-            {activeTab === 'tab4' && <TabContent tabName="Tab 4" />}
+            {activeTab === 'System Access' && <TabContent tabName="System Access" />}
+            {activeTab === 'Budget Planning' && <TabContent tabName="Budget Planning" />}
+            {activeTab === 'Reporting' && <TabContent tabName="Reporting" />}
           </main>
         </div>
       </div>
