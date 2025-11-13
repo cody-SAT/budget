@@ -186,7 +186,14 @@ const YOUTUBE_COLORS = { 'Ad Revenue': '#4285F4', 'Subscriptions Revenue': '#34A
 const WAYMO_MILESTONES = { 2021: "Raised $2.5B in funding; 100K+ rides.", 2022: "Began charging for rides in San Francisco.", 2023: "Launched fully driverless rides in SF & Phoenix.", 2024: "Expanded operations to Austin; 2M driverless miles.", 2025: "Projected 10M driverless miles; 50,000 active riders." };
 
 // --- HELPER FUNCTIONS & COMPONENTS ---
-const formatLargeNumber = (value) => { if (value === null || isNaN(value)) return '$0M'; const valInMillions = value; if (Math.abs(valInMillions) >= 1000) return `$${(valInMillions / 1000).toFixed(1)}B`; return `$${valInMillions.toFixed(0)}M`; };
+const formatLargeNumber = (value) => {
+  if (value === null || isNaN(value) || !isFinite(value)) return '$0M'; // FIX: Added !isFinite check
+  const valInMillions = value;
+  if (Math.abs(valInMillions) >= 1000) {
+    return `$${(valInMillions / 1000).toFixed(1)}B`;
+  }
+  return `$${valInMillions.toFixed(0)}M`;
+};
 const formatNumber = (value) => new Intl.NumberFormat('en-US').format(value);
 const formatPercent = (value) => { if (value === null || isNaN(value) || !isFinite(value)) return '0.0%'; return `${(value * 100).toFixed(1)}%`; };
 const formatRatio = (value) => { if (value === null || isNaN(value) || !isFinite(value)) return '0.0x'; return `${value.toFixed(2)}x`; };
