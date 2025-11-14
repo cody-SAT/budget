@@ -59,7 +59,7 @@ export const MOCK_FINANCIAL_DATA = [
   { id: 47, year: 2025, segment: 'Google Cloud', item: 'Workspace', revenue: 16000, tac: 0, costOfRevenue: 5000, opex_rd: 2000, opex_sm: 2000, operatingIncome: 7000 },
   { id: 48, year: 2025, segment: 'Other Bets', item: 'Waymo', revenue: 600, tac: 0, costOfRevenue: 600, opex_rd: 1300, opex_sm: 1200, operatingIncome: -2500 },
   { id: 49, year: 2025, segment: 'Other Bets', item: 'Verily', revenue: 1400, tac: 0, costOfRevenue: 400, opex_rd: 1100, opex_sm: 1400, operatingIncome: -1500 },
-  { id: 50, year: 2025, segment: 'Corporate Costs', item: 'Corporate', revenue: 0, tac: 0, costOfRevenue: 0, opex_rd: 0, opex_sm: 0, operatingIncome: -12500 },
+  { year: 2025, segment: 'Corporate Costs', item: 'Corporate', revenue: 0, tac: 0, costOfRevenue: 0, opex_rd: 0, opex_sm: 0, operatingIncome: -12500 },
 ];
 
 export const MOCK_BALANCE_SHEET_DATA = [
@@ -155,7 +155,8 @@ export const MOCK_CLOUD_MARKET_SHARE_DATA = [
   { name: 'AWS', value: 31, fill: '#FF9900' },
   { name: 'Azure', value: 26, fill: '#0078D4' }, // Updated
   { name: 'Google Cloud', value: 11, fill: '#34A853' },
-  { name:S: 'Other', value: 32, fill: '#B0B0B0' }, // Updated
+  // FIX: Corrected typo 'name:S:' to 'name:'
+  { name: 'Other', value: 32, fill: '#B0B0B0' }, // Updated
 ];
 export const MOCK_CLOUD_COMPARISON_DATA = [
   { metric: 'Key Strength', aws: 'Market Leader, Mature Ecosystem, Broadest Service Catalog', azure: 'Enterprise Integration (Microsoft 365, Teams), Strong momentum with GenAI workloads', gcp: 'Best-in-class in AI/ML and GenAI (Vertex AI, TPUs), Kubernetes (GKE), Open Source' },
@@ -165,7 +166,8 @@ export const MOCK_CLOUD_COMPARISON_DATA = [
 
 // Constants
 export const uniqueYears = [...new Set(MOCK_FINANCIAL_DATA.map(item => item.year))].sort((a, b) => b - a);
-export const SEGMENT_COLORS = { 'Google Services': '#4285F4', 'Google Cloud': '#34A83', 'Other Bets': '#FBBC05', 'Corporate Costs': '#EA4335', 'Corporate': '#EA4335' };
+// FIX: Corrected Google Green color hex code
+export const SEGMENT_COLORS = { 'Google Services': '#4285F4', 'Google Cloud': '#34A853', 'Other Bets': '#FBBC05', 'Corporate Costs': '#EA4335', 'Corporate': '#EA4335' };
 export const OPEX_COLORS = { 'Research & Development': '#4285F4', 'Sales & Marketing': '#34A853', 'General & Administrative': '#FBBC05' };
 export const CLOUD_COLORS = { 'GCP': '#34A853', 'Workspace': '#4285F4' };
 export const YOUTUBE_COLORS = { 'Ad Revenue': '#4285F4', 'Subscriptions Revenue': '#34A853' };
