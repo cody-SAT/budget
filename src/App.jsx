@@ -153,8 +153,6 @@ const MOCK_SYSTEM_ACCESS_DATA = [
   { id: 15, name: 'Olivia Jackson', email: 'olivia.jackson@example.com', department: 'Engineering', role: 'User', status: 'Deactivated', licenseType: 'Standard', cost: 0 },
 ];
 
-// --- NEW DATA FROM USER REQUEST ---
-
 // NEW MOCK FINANCIAL RATIO DATA (from user)
 const MOCK_RATIO_DATA = [
   { year: 2020, roe: 0.1809, roa: 0.1260, debtToEquity: 0.1203, debtToAsset: 0.0838, evToRevenue: 6.54, evToEbitda: 19.28, ev: 1190000, cashToDebt: 2.4325, taxRate: 0.1625 },
@@ -165,20 +163,18 @@ const MOCK_RATIO_DATA = [
   { year: 2025, roe: 0.3150, roa: 0.2300, debtToEquity: 0.0820, debtToAsset: 0.0600, evToRevenue: 6.80, evToEbitda: 17.00, ev: 2500000, cashToDebt: 4.8000, taxRate: 0.1650 }, // Projected 2025
 ];
 
-// NEW MOCK CLOUD COMPETITIVE DATA
+// NEW/UPDATED MOCK CLOUD COMPETITIVE DATA
 const MOCK_CLOUD_MARKET_SHARE_DATA = [
   { name: 'AWS', value: 31, fill: '#FF9900' },
-  { name: 'Azure', value: 25, fill: '#0078D4' },
+  { name: 'Azure', value: 26, fill: '#0078D4' }, // Updated
   { name: 'Google Cloud', value: 11, fill: '#34A853' },
-  { name: 'Other', value: 33, fill: '#B0B0B0' },
+  { name: 'Other', value: 32, fill: '#B0B0B0' }, // Updated
 ];
 const MOCK_CLOUD_COMPARISON_DATA = [
-  { metric: 'Key Strength', aws: 'Market Leader, Mature Ecosystem, Broadest Service Catalog', azure: 'Enterprise Integration (Microsoft 365, Teams), Hybrid Cloud', gcp: 'Data Analytics, AI/ML, Kubernetes (GKE), Open Source' },
-  { metric: 'Common Analyst Take', aws: 'The "default" choice, but can be complex and expensive.', azure: 'The "fast-follower" winning large enterprise deals.', gcp: 'The "tech-first" cloud, strong with developers and data scientists.' },
+  { metric: 'Key Strength', aws: 'Market Leader, Mature Ecosystem, Broadest Service Catalog', azure: 'Enterprise Integration (Microsoft 365, Teams), Strong momentum with GenAI workloads', gcp: 'Best-in-class in AI/ML and GenAI (Vertex AI, TPUs), Kubernetes (GKE), Open Source' },
+  { metric: 'Common Take', aws: 'The "default" choice, but can be complex and expensive.', azure: 'The "fast-follower" winning large enterprise deals, leveraging existing MS relationships.', gcp: 'The "tech-first" cloud, strong with developers and data scientists.' },
   { metric: 'Strategic Weakness', aws: 'Perceived high cost, complex billing.', azure: 'Less feature-rich in some niche areas vs. AWS.', gcp: 'Smaller market share, less-developed enterprise sales channel.' },
 ];
-
-// --- END NEW DATA ---
 
 
 const uniqueYears = [...new Set(MOCK_FINANCIAL_DATA.map(item => item.year))].sort((a, b) => b - a);
@@ -190,9 +186,12 @@ const WAYMO_MILESTONES = { 2021: "Raised $2.5B in funding; 100K+ rides.", 2022: 
 
 // --- HELPER FUNCTIONS & COMPONENTS ---
 const formatLargeNumber = (value) => { if (typeof value !== 'number' || value === null || !isFinite(value)) return '$0M'; const valInMillions = value; if (Math.abs(valInMillions) >= 1000) return `$${(valInMillions / 1000).toFixed(1)}B`; return `$${valInMillions.toFixed(0)}M`; };
-const formatNumber = (value) => new Intl.NumberFormat('en-US').format(value);
+const formatNumber = (value) => { if (typeof value !== 'number' || value === null || !isFinite(value)) return '0'; return new Intl.NumberFormat('en-US').format(value); };
 const formatPercent = (value) => { if (typeof value !== 'number' || value === null || !isFinite(value)) return '0.0%'; return `${(value * 100).toFixed(1)}%`; };
-const formatRatio = (value) => { if (typeof value !== 'number' || value === null || !isFinite(value)) return '0.0x'; return `${value.toFixed(2)}x`; };
+const formatRatio = (value) => { if (typeof value !== 'number' || value === null || !isFinite(value)) return '0.00x'; return `${value.toFixed(2)}x`; };
+// NEW: Helper for simple currency formatting
+const formatCurrency = (value) => { if (typeof value !== 'number' || value === null || !isFinite(value)) return '$0'; return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value); };
+
 const KpiCard = ({ title, value, change, isPositive, isCurrency = true }) => ( <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100"> <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">{title}</h3> <p className="text-3xl font-bold text-gray-900 mt-2">{value}</p> {change && ( <p className={`text-sm font-medium mt-1 ${isPositive ? 'text-green-600' : 'text-red-600'}`}> {isPositive ? '▲' : '▼'} {change} </p> )} </div> );
 const ChartWrapper = ({ title, children, height = "h-96" }) => ( <div className={`bg-white p-6 rounded-lg shadow-sm border border-gray-100 ${height}`}> <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3> <ResponsiveContainer width="100%" height="90%"> {children} </ResponsiveContainer> </div> );
 const FilterButton = ({ text, value, activeValue, onClick }) => ( <button onClick={() => onClick(value)} className={` px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeValue === value ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'} `} > {text} </button> );
@@ -290,7 +289,8 @@ const RevenueToProfitSankey = ({ financialData, year, segmentFilter }) => {
     links = links.filter(link => 
       link.value > 0 && 
       link.source !== undefined && 
-      link.target !== undefined
+      link.target !== undefined &&
+      !isNaN(link.value)
     );
 
     return { nodes, links };
@@ -318,6 +318,7 @@ const RevenueToProfitSankey = ({ financialData, year, segmentFilter }) => {
         
         // --- FIX: Use a custom node prop that includes text ---
         node={({ x, y, width, height, index, payload, containerWidth }) => {
+          if (!sankeyData.nodes[index]) return null; // Add guard for safety
           const node = sankeyData.nodes[index];
           const isSource = x < containerWidth / 2;
           return (
@@ -346,8 +347,7 @@ const RevenueToProfitSankey = ({ financialData, year, segmentFilter }) => {
         }}
         // --- END NODE FIX ---
       >
-        <Tooltip formatter={formatLargeNumber} />
-        {/* --- FIX: Removed invalid <text> children --- */}
+        <Tooltip formatter={(value) => formatLargeNumber(value)} />
       </Sankey>
     </ChartWrapper>
   );
@@ -393,6 +393,7 @@ const OverviewDashboard = ({ financialData, timeSeries, year, onYearChange, year
       
       <div className="grid grid-cols-1 gap-6">
         <div className="lg:col-span-3">
+          {/* FIX: Removed "(Time Series)" */}
           <ChartWrapper title="Key Performance Metrics (YoY)">
             <LineChart data={timeSeries} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
@@ -408,6 +409,7 @@ const OverviewDashboard = ({ financialData, timeSeries, year, onYearChange, year
         </div>
         
         <div className="lg:col-span-3">
+          {/* FIX: Removed "(Time Series)" */}
           <ChartWrapper title="Revenue by Segment">
             <>
               <div className="flex justify-center space-x-4 mb-4">
@@ -474,24 +476,50 @@ const OverviewDashboard = ({ financialData, timeSeries, year, onYearChange, year
 const GoogleSearchTab = ({ data, year }) => {
   const timeData = useMemo(() => { return data .filter(d => d.item === 'Google Search') .map(d => ({ ...d, tacPercent: (d.tac / d.revenue), grossProfit: d.revenue - d.tac - d.costOfRevenue, grossMargin: (d.revenue - d.tac - d.costOfRevenue) / d.revenue, opMargin: (d.operatingIncome / d.revenue), })); }, [data]);
   const currentYearData = timeData.find(d => d.year === year) || timeData[timeData.length - 1] || {};
-  return ( <div className="space-y-6 animate-fadeIn"> <h2 className="text-2xl font-semibold text-gray-900 mb-0">Google Search ({year})</h2> <div className="grid grid-cols-1 md:grid-cols-4 gap-6"> <KpiCard title="Search Revenue" value={formatLargeNumber(currentYearData.revenue)} /> <KpiCard title="Gross Profit" value={formatLargeNumber(currentYearData.grossProfit)} /> <KpiCard title="Gross Margin" value={formatPercent(currentYearData.grossMargin)} isCurrency={false} /> <KpiCard title="TAC as % of Revenue" value={formatPercent(currentYearData.tacPercent)} change="Key Antitrust Metric" isPositive={false} isCurrency={false} /> </div> <ChartWrapper title="Search Revenue vs. Costs (Time Series)"> <LineChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatLargeNumber} /> <Tooltip content={<CurrencyTooltip />} /> <Legend /> <Line type="monotone" dataKey="revenue" name="Total Revenue" stroke="#4285F4" strokeWidth={3} /> <Line type="monotone" dataKey="costOfRevenue" name="Cost of Revenue" stroke="#FBBC05" strokeWidth={2} /> <Line type="monotone" dataKey="tac" name="Traffic Acquisition Cost (TAC)" stroke="#EA4335" strokeWidth={2} /> </LineChart> </ChartWrapper> <ChartWrapper title="Search Gross & Operating Margin (Time Series)"> <LineChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatPercent} /> <Tooltip content={<PercentTooltip />} /> <Legend /> <Line type="monotone" dataKey="grossMargin" name="Gross Margin %" stroke="#4285F4" strokeWidth={3} /> <Line type="monotone" dataKey="opMargin" name="Operating Margin %" stroke="#34A853" strokeWidth={2} strokeDasharray="5 5" /> </LineChart> </ChartWrapper> </div> );
+  return ( <div className="space-y-6 animate-fadeIn"> <h2 className="text-2xl font-semibold text-gray-900 mb-0">Google Search ({year})</h2> <div className="grid grid-cols-1 md:grid-cols-4 gap-6"> <KpiCard title="Search Revenue" value={formatLargeNumber(currentYearData.revenue)} /> <KpiCard title="Gross Profit" value={formatLargeNumber(currentYearData.grossProfit)} /> <KpiCard title="Gross Margin" value={formatPercent(currentYearData.grossMargin)} isCurrency={false} /> <KpiCard title="TAC as % of Revenue" value={formatPercent(currentYearData.tacPercent)} change="Key Antitrust Metric" isPositive={false} isCurrency={false} /> </div> 
+  {/* FIX: Removed "(Time Series)" */}
+  <ChartWrapper title="Search Revenue vs. Costs"> <LineChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatLargeNumber} /> <Tooltip content={<CurrencyTooltip />} /> <Legend /> <Line type="monotone" dataKey="revenue" name="Total Revenue" stroke="#4285F4" strokeWidth={3} /> <Line type="monotone" dataKey="costOfRevenue" name="Cost of Revenue" stroke="#FBBC05" strokeWidth={2} /> <Line type="monotone" dataKey="tac" name="Traffic Acquisition Cost (TAC)" stroke="#EA4335" strokeWidth={2} /> </LineChart> </ChartWrapper> 
+  {/* FIX: Removed "(Time Series)" */}
+  <ChartWrapper title="Search Gross & Operating Margin"> <LineChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatPercent} /> <Tooltip content={<PercentTooltip />} /> <Legend /> <Line type="monotone" dataKey="grossMargin" name="Gross Margin %" stroke="#4285F4" strokeWidth={3} /> <Line type="monotone" dataKey="opMargin" name="Operating Margin %" stroke="#34A853" strokeWidth={2} strokeDasharray="5 5" /> </LineChart> </ChartWrapper> </div> );
 };
 
 // --- 3. YOUTUBE TAB ---
 const YouTubeTab = ({ data, year }) => {
   const timeData = useMemo(() => { const years = [...new Set(data.map(d => d.year))].sort(); return years.map(y => { const adData = data.find(d => d.year === y && d.item === 'YouTube Ads'); const subData = data.find(d => d.year === y && d.item === 'YouTube Subscriptions'); const adRev = adData ? adData.revenue : 0; const subRev = subData ? subData.revenue : 0; const totalRev = adRev + subRev; const totalOpIncome = (adData ? adData.operatingIncome : 0) + (subData ? subData.operatingIncome : 0); return { year: y, adRevenue: adRev, subRevenue: subRev, totalRevenue: totalRev, opMargin: totalRev > 0 ? totalOpIncome / totalRev : 0, }; }); }, [data]);
   const currentYearData = timeData.find(d => d.year === year) || timeData[timeData.length - 1] || {};
-  return ( <div className="space-y-6 animate-fadeIn"> <h2 className="text-2xl font-semibold text-gray-900 mb-0">YouTube ({year})</h2> <div className="grid grid-cols-1 md:grid-cols-3 gap-6"> <KpiCard title="Total YouTube Revenue" value={formatLargeNumber(currentYearData.totalRevenue)} /> <KpiCard title="Ad Revenue" value={formatLargeNumber(currentYearData.adRevenue)} /> <KpiCard title="Subscriptions Revenue" value={formatLargeNumber(currentYearData.subRevenue)} change="High-Growth" isPositive={true} /> </div> <ChartWrapper title="YouTube Revenue Sources (Time Series)"> <BarChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatLargeNumber} /> <Tooltip content={<CurrencyTooltip />} /> <Legend /> <Bar dataKey="adRevenue" name="Ad Revenue" stackId="a" fill={YOUTUBE_COLORS['Ad Revenue']} /> <Bar dataKey="subRevenue" name="Subscriptions Revenue" stackId="a" fill={YOUTUBE_COLORS['Subscriptions Revenue']} /> </BarChart> </ChartWrapper> </div> );
+  return ( <div className="space-y-6 animate-fadeIn"> <h2 className="text-2xl font-semibold text-gray-900 mb-0">YouTube ({year})</h2> <div className="grid grid-cols-1 md:grid-cols-3 gap-6"> <KpiCard title="Total YouTube Revenue" value={formatLargeNumber(currentYearData.totalRevenue)} /> <KpiCard title="Ad Revenue" value={formatLargeNumber(currentYearData.adRevenue)} /> <KpiCard title="Subscriptions Revenue" value={formatLargeNumber(currentYearData.subRevenue)} change="High-Growth" isPositive={true} /> </div> 
+  {/* FIX: Removed "(Time Series)" */}
+  <ChartWrapper title="YouTube Revenue Sources"> <BarChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatLargeNumber} /> <Tooltip content={<CurrencyTooltip />} /> <Legend /> <Bar dataKey="adRevenue" name="Ad Revenue" stackId="a" fill={YOUTUBE_COLORS['Ad Revenue']} /> <Bar dataKey="subRevenue" name="Subscriptions Revenue" stackId="a" fill={YOUTUBE_COLORS['Subscriptions Revenue']} /> </BarChart> </ChartWrapper> </div> );
 };
 
 // --- 4. "BEEFED UP" GOOGLE CLOUD TAB ---
-const CloudSummary = ({ timeData, year }) => { const currentYearData = timeData.find(d => d.year === year) || timeData[timeData.length - 1] || {}; return ( <div className="space-y-6"> <div className="grid grid-cols-1 md:grid-cols-4 gap-6"> <KpiCard title="Total Cloud Revenue" value={formatLargeNumber(currentYearData.totalRevenue)} /> <KpiCard title="Cloud Op. Income" value={formatLargeNumber(currentYearData.totalOpIncome)} isPositive={currentYearData.totalOpIncome >= 0} /> <KpiCard title="Cloud Op. Margin" value={formatPercent(currentYearData.opMargin)} isPositive={currentYearData.opMargin >= 0} /> <KpiCard title="Revenue Growth (YoY)" value={formatPercent(currentYearData.revenueGrowth)} isPositive={true} /> </div> <ChartWrapper title="Cloud Revenue & Profitability (Time Series)"> <LineChart data={timeData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis yAxisId="left" stroke={SEGMENT_COLORS['Google Cloud']} tickFormatter={formatLargeNumber} /> <YAxis yAxisId="right" orientation="right" stroke={currentYearData.totalOpIncome >= 0 ? SEGMENT_COLORS['Google Cloud'] : '#EA4335'} tickFormatter={formatLargeNumber} /> <Tooltip content={<CurrencyTooltip />} /> <Legend /> <Line yAxisId="left" type="monotone" dataKey="totalRevenue" name="Total Revenue" stroke={SEGMENT_COLORS['Google Cloud']} strokeWidth={3} /> <Line yAxisId="right" type="monotone" dataKey="totalOpIncome" name="Operating Income" stroke={currentYearData.totalOpIncome >= 0 ? SEGMENT_COLORS['Google Cloud'] : '#EA4335'} strokeWidth={3} /> </LineChart> </ChartWrapper> </div> ); };
-const CloudGcpVsWorkspace = ({ timeData, year }) => { return ( <div className="space-y-6"> <ChartWrapper title="Cloud Revenue: GCP vs. Workspace"> <BarChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatLargeNumber} /> <Tooltip content={<CurrencyTooltip />} /> <Legend /> <Bar dataKey="gcpRevenue" name="GCP Revenue" stackId="a" fill={CLOUD_COLORS['GCP']} /> <Bar dataKey="workspaceRevenue" name="Workspace Revenue" stackId="a" fill={CLOUD_COLORS['Workspace']} /> </BarChart> </ChartWrapper> <ChartWrapper title="Growth Rates: GCP vs. Workspace"> <LineChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatPercent} /> <Tooltip content={<PercentTooltip />} /> <Legend /> <Line type="monotone" dataKey="gcpGrowth" name="GCP Growth (YoY)" stroke={CLOUD_COLORS['GCP']} strokeWidth={3} /> <Line type="monotone" dataKey="workspaceGrowth" name="Workspace Growth (YoY)" stroke={CLOUD_COLORS['Workspace']} strokeWidth={3} /> </LineChart> </ChartWrapper> </div> ); };
-const CloudProfitability = ({ timeData, year }) => { return ( <div className="space-y-6"> <ChartWrapper title="Cloud Revenue vs. Cost of Revenue (CoR)"> <LineChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatLargeNumber} /> <Tooltip content={<CurrencyTooltip />} /> <Legend /> <Line type="monotone" dataKey="totalRevenue" name="Total Revenue" stroke="#34A853" strokeWidth={3} /> <Line type="monotone" dataKey="totalCostOfRevenue" name="Cost of Revenue" stroke="#EA4335" strokeWidth={3} /> </LineChart> </ChartWrapper> <ChartWrapper title="Cloud Gross Margin & Operating Margin"> <LineChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatPercent} /> <Tooltip content={<PercentTooltip />} /> <Legend /> <Line type="monotone" dataKey="grossMargin" name="Gross Margin %" stroke="#34A853" strokeWidth={3} /> <Line type="monotone" dataKey="opMargin" name="Operating Margin %" stroke="#4285F4" strokeWidth={3} /> </LineChart> </ChartWrapper> </div> ); };
+const CloudSummary = ({ timeData, year }) => { const currentYearData = timeData.find(d => d.year === year) || timeData[timeData.length - 1] || {}; return ( <div className="space-y-6"> <div className="grid grid-cols-1 md:grid-cols-4 gap-6"> <KpiCard title="Total Cloud Revenue" value={formatLargeNumber(currentYearData.totalRevenue)} /> <KpiCard title="Cloud Op. Income" value={formatLargeNumber(currentYearData.totalOpIncome)} isPositive={currentYearData.totalOpIncome >= 0} /> <KpiCard title="Cloud Op. Margin" value={formatPercent(currentYearData.opMargin)} isPositive={currentYearData.opMargin >= 0} /> <KpiCard title="Revenue Growth (YoY)" value={formatPercent(currentYearData.revenueGrowth)} isPositive={true} /> </div> 
+{/* FIX: Removed "(Time Series)" and adjusted colors */}
+<ChartWrapper title="Cloud Revenue & Profitability"> 
+  <LineChart data={timeData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}> 
+    <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> 
+    <XAxis dataKey="year" stroke="#666" /> 
+    <YAxis yAxisId="left" stroke="#4285F4" tickFormatter={formatLargeNumber} /> 
+    <YAxis yAxisId="right" orientation="right" stroke={currentYearData.totalOpIncome >= 0 ? '#34A853' : '#EA4335'} tickFormatter={formatLargeNumber} /> 
+    <Tooltip content={<CurrencyTooltip />} /> <Legend /> 
+    <Line yAxisId="left" type="monotone" dataKey="totalRevenue" name="Total Revenue" stroke="#4285F4" strokeWidth={3} /> 
+    <Line yAxisId="right" type="monotone" dataKey="totalOpIncome" name="Operating Income" stroke={currentYearData.totalOpIncome >= 0 ? '#34A853' : '#EA4335'} strokeWidth={3} /> 
+  </LineChart> 
+</ChartWrapper> </div> ); };
+const CloudGcpVsWorkspace = ({ timeData, year }) => { return ( <div className="space-y-6"> <ChartWrapper title="Cloud Revenue: GCP vs. Workspace"> <BarChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatLargeNumber} /> <Tooltip content={<CurrencyTooltip />} /> <Legend /> <Bar dataKey="gcpRevenue" name="GCP Revenue" stackId="a" fill={CLOUD_COLORS['GCP']} /> <Bar dataKey="workspaceRevenue" name="Workspace Revenue" stackId="a" fill={CLOUD_COLORS['Workspace']} /> </BarChart> </ChartWrapper> 
+{/* FIX: Removed "(Time Series)" */}
+<ChartWrapper title="Growth Rates: GCP vs. Workspace"> <LineChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatPercent} /> <Tooltip content={<PercentTooltip />} /> <Legend /> <Line type="monotone" dataKey="gcpGrowth" name="GCP Growth (YoY)" stroke={CLOUD_COLORS['GCP']} strokeWidth={3} /> <Line type="monotone" dataKey="workspaceGrowth" name="Workspace Growth (YoY)" stroke={CLOUD_COLORS['Workspace']} strokeWidth={3} /> </LineChart> </ChartWrapper> </div> ); };
+const CloudProfitability = ({ timeData, year }) => { return ( <div className="space-y-6"> 
+{/* FIX: Removed "(Time Series)" */}
+<ChartWrapper title="Cloud Revenue vs. Cost of Revenue (CoR)"> <LineChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatLargeNumber} /> <Tooltip content={<CurrencyTooltip />} /> <Legend /> <Line type="monotone" dataKey="totalRevenue" name="Total Revenue" stroke="#34A853" strokeWidth={3} /> <Line type="monotone" dataKey="totalCostOfRevenue" name="Cost of Revenue" stroke="#EA4335" strokeWidth={3} /> </LineChart> </ChartWrapper> 
+{/* FIX: Removed "(Time Series)" */}
+<ChartWrapper title="Cloud Gross Margin & Operating Margin"> <LineChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatPercent} /> <Tooltip content={<PercentTooltip />} /> <Legend /> <Line type="monotone" dataKey="grossMargin" name="Gross Margin %" stroke="#34A853" strokeWidth={3} /> <Line type="monotone" dataKey="opMargin" name="Operating Margin %" stroke="#4285F4" strokeWidth={3} /> </LineChart> </ChartWrapper> </div> ); };
 // NEW Cloud Spend Analysis
 const CloudSpendAnalysis = ({ timeData, year }) => { return ( <div className="space-y-6"> <ChartWrapper title="Cloud Operating Expenses (Spending)"> <BarChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatLargeNumber} /> <Tooltip content={<CurrencyTooltip />} /> <Legend /> <Bar dataKey="totalOpexRD" name="Research & Development" stackId="a" fill={OPEX_COLORS['Research & Development']} /> <Bar dataKey="totalOpexSM" name="Sales & Marketing" stackId="a" fill={OPEX_COLORS['Sales & Marketing']} /> </BarChart> </ChartWrapper> <ChartWrapper title="Cloud Spend as % of Cloud Revenue"> <LineChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis stroke="#666" tickFormatter={formatPercent} /> <Tooltip content={<PercentTooltip />} /> <Legend /> <Line type="monotone" dataKey="corAsPercentOfRevenue" name="Cost of Revenue %" stroke="#EA4335" strokeWidth={3} /> <Line type="monotone" dataKey="rdAsPercentOfRevenue" name="R&D %" stroke="#4285F4" strokeWidth={2} /> <Line type="monotone" dataKey="smAsPercentOfRevenue" name="S&M %" stroke="#34A853" strokeWidth={2} /> </LineChart> </ChartWrapper> </div> ); };
 // NEW Cloud KPIs
-const CloudKpis = ({ kpiData, year }) => { const currentYearData = kpiData.find(d => d.year === year) || kpiData[kpiData.length - 1] || {}; return ( <div className="space-y-6"> <div className="grid grid-cols-1 md:grid-cols-3 gap-6"> <KpiCard title="Cloud Backlog" value={formatLargeNumber(currentYearData.backlog)} /> <KpiCard title="Total Customers" value={formatNumber(currentYearData.totalCustomers)} isCurrency={false} /> <KpiCard title="Revenue per Customer" value={formatLargeNumber(currentYearData.revPerCustomer)} /> </div> <ChartWrapper title="Cloud Backlog vs. Revenue"> <LineChart data={kpiData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis yAxisId="left" stroke="#34A853" tickFormatter={formatLargeNumber} /> <YAxis yAxisId="right" orientation="right" stroke="#4285F4" tickFormatter={formatLargeNumber} /> <Tooltip content={<CurrencyTooltip />} /> <Legend /> <Line yAxisId="left" type="monotone" dataKey="backlog" name="Backlog" stroke="#34A853" strokeWidth={3} /> <Line yAxisId="right" type="monotone" dataKey="revenue" name="Recognized Revenue" stroke="#4285F4" strokeWidth={2} strokeDasharray="5 5" /> </LineChart> </ChartWrapper> </div> ); };
+const CloudKpis = ({ kpiData, year }) => { const currentYearData = kpiData.find(d => d.year === year) || kpiData[kpiData.length - 1] || {}; return ( <div className="space-y-6"> <div className="grid grid-cols-1 md:grid-cols-3 gap-6"> <KpiCard title="Cloud Backlog" value={formatLargeNumber(currentYearData.backlog)} /> <KpiCard title="Total Customers" value={formatNumber(currentYearData.totalCustomers)} isCurrency={false} /> <KpiCard title="Revenue per Customer" value={formatLargeNumber(currentYearData.revPerCustomer)} /> </div> 
+{/* FIX: Removed "(Time Series)" */}
+<ChartWrapper title="Cloud Backlog vs. Revenue"> <LineChart data={kpiData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}> <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" /> <XAxis dataKey="year" stroke="#666" /> <YAxis yAxisId="left" stroke="#34A853" tickFormatter={formatLargeNumber} /> <YAxis yAxisId="right" orientation="right" stroke="#4285F4" tickFormatter={formatLargeNumber} /> <Tooltip content={<CurrencyTooltip />} /> <Legend /> <Line yAxisId="left" type="monotone" dataKey="backlog" name="Backlog" stroke="#34A853" strokeWidth={3} /> <Line yAxisId="right" type="monotone" dataKey="revenue" name="Recognized Revenue" stroke="#4285F4" strokeWidth={2} strokeDasharray="5 5" /> </LineChart> </ChartWrapper> </div> ); };
 
 // Main Cloud Tab Component
 const GoogleCloudTab = ({ data, kpiData, year }) => {
@@ -532,7 +560,8 @@ const IncomeStatement = ({ data, year }) => {
         <div className="flex justify-between py-2 border-b font-bold"><span>Total Operating Expenses</span><span>({formatLargeNumber(currentYearData.totalOpEx)})</span></div>
         <div className="flex justify-between py-2 pt-4 border-b font-bold text-lg"><span>Operating Income</span><span>{formatLargeNumber(currentYearData.totalOpIncome)}</span></div>
       </div>
-      <ChartWrapper title="Key Margins (Time Series)">
+      {/* FIX: Removed "(Time Series)" */}
+      <ChartWrapper title="Key Margins">
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
           <XAxis dataKey="year" stroke="#666" />
@@ -579,7 +608,8 @@ const BalanceSheet = ({ data, year }) => {
           <Bar dataKey="Equity" stackId="b" fill="#4285F4" />
         </BarChart>
       </ChartWrapper>
-      <ChartWrapper title="Key Financial Ratios (Time Series)">
+      {/* FIX: Removed "(Time Series)" */}
+      <ChartWrapper title="Key Financial Ratios">
         <LineChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
           <XAxis dataKey="year" stroke="#666" />
@@ -615,7 +645,8 @@ const CashFlowStatement = ({ data, timeSeries, year }) => {
         <KpiCard title="Capital Expenditures (Capex)" value={formatLargeNumber(currentYearData.capex)} isPositive={false} />
         <KpiCard title="Free Cash Flow (FCF)" value={formatLargeNumber(currentYearData.freeCashFlow)} />
       </div>
-      <ChartWrapper title="Sources & Uses of Cash (Time Series)">
+      {/* FIX: Removed "(Time Series)" */}
+      <ChartWrapper title="Sources & Uses of Cash">
         <BarChart data={timeData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
           <XAxis dataKey="year" stroke="#666" />
@@ -627,6 +658,7 @@ const CashFlowStatement = ({ data, timeSeries, year }) => {
           <Bar dataKey="shareRepurchases" name="Cash for Financing (Buybacks)" fill="#EA4335" />
         </BarChart>
       </ChartWrapper>
+      {/* FIX: Removed "(Time Series)" */}
       <ChartWrapper title="Free Cash Flow Margin & Capex % of Revenue">
         <LineChart data={timeData}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
@@ -670,7 +702,8 @@ const FinancialRatios = ({ data, year }) => {
         ))}
       </div>
 
-      <ChartWrapper title="Profitability Ratios (Time Series)">
+      {/* FIX: Removed "(Time Series)" */}
+      <ChartWrapper title="Profitability Ratios">
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
           <XAxis dataKey="year" stroke="#666" />
@@ -682,7 +715,8 @@ const FinancialRatios = ({ data, year }) => {
         </LineChart>
       </ChartWrapper>
 
-      <ChartWrapper title="Leverage & Valuation Ratios (Time Series)">
+      {/* FIX: Removed "(Time Series)" */}
+      <ChartWrapper title="Leverage & Valuation Ratios">
         <LineChart data={data} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
           <XAxis dataKey="year" stroke="#666" />
@@ -827,7 +861,12 @@ const SystemAccessTab = () => {
         <KpiCard title="Total Users" value={formatNumber(kpiData.totalUsers)} isCurrency={false} />
         <KpiCard title="Active Users" value={`${formatNumber(kpiData.activeUsers)} (${formatPercent(kpiData.activePercent)})`} isCurrency={false} />
         <KpiCard title="Total Annual License Cost" value={formatLargeNumber(kpiData.totalAnnualCost / 1000000)} />
-        <KpiCard title="Avg. Cost per Active User" value={formatLargeNumber((kpiData.totalAnnualCost / (kpiData.activeUsers || 1)) / 1000000)} change="/ year" isPositive={false} />
+        {/* FIX: Use formatCurrency and handle divide by zero */}
+        <KpiCard 
+          title="Avg. Cost per Active User" 
+          value={formatCurrency(kpiData.totalAnnualCost / (kpiData.activeUsers || 1))} 
+          change="/ year"
+        />
       </div>
 
       {/* Filters */}
@@ -899,7 +938,8 @@ const SystemAccessTab = () => {
 const CloudCompetitiveAnalysis = () => {
   return (
     <div className="animate-fadeIn space-y-6">
-      <h2 className="text-2xl font-semibold text-gray-900 mb-4">Cloud Competitive Analysis (Q4 2024)</h2>
+      {/* FIX: Updated title and date */}
+      <h2 className="text-2xl font-semibold text-gray-900 mb-4">Cloud Competitive Analysis (Q3 2025)</h2>
       
       <ChartWrapper title="Cloud Infrastructure Market Share" height="h-[450px]">
         <PieChart>
@@ -922,7 +962,8 @@ const CloudCompetitiveAnalysis = () => {
       </ChartWrapper>
 
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">"Elite Analyst" Comparisons</h3>
+        {/* FIX: Updated title */}
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Competitive Landscape</h3>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
