@@ -14,17 +14,17 @@ import {
   formatLargeNumber,
   formatPercent,
   formatNumber,
-} from '@/lib/utils';
+} from '../lib/utils'; // FIX: Using relative path
 
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from './ui/card'; // FIX: Using relative path
 
-// FIX: Corrected the syntax error on this import line
-import { SEGMENT_COLORS, OPEX_COLORS } from '@/data/mockData';
+// FIX: Using relative path
+import { SEGMENT_COLORS, OPEX_COLORS } from '../data/mockData';
 
 // --- Shared Components ---
 
