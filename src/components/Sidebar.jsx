@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { cn } from '@/lib/utils'
+import { cn } from '../lib/utils' // FIX: Relative path
 import {
   LayoutDashboard,
   DatabaseZap,
@@ -31,8 +31,6 @@ export function Sidebar() {
     <nav className="flex-shrink-0 sm:w-60 p-4 sm:p-8 sm:pt-6">
       <div className="flex flex-row sm:flex-col -mx-2 sm:mx-0 space-x-2 sm:space-x-0 sm:space-y-1 overflow-x-auto sm:overflow-visible">
         {navLinks.map((link) => {
-          // Check if the current pathname starts with the link's href
-          // This makes "Segment Deep Dive" active even if on "/segment-deep-dive/google-cloud"
           const isActive = pathname ? pathname.startsWith(link.href) : false
           return (
             <Link
@@ -41,8 +39,8 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-3 flex-shrink-0 sm:w-full sm:text-left py-3 px-4 font-medium text-sm sm:text-base transition-all duration-150 whitespace-nowrap focus:outline-none rounded-md",
                 isActive
-                  ? 'text-indigo-700 bg-indigo-50' // Active link style
-                  : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50' // Inactive link style
+                  ? 'text-indigo-700 bg-indigo-50'
+                  : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
               )}
             >
               <link.icon className="h-4 w-4 flex-shrink-0" />
