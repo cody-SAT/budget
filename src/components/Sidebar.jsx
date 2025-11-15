@@ -14,13 +14,13 @@ import {
   Lock,
 } from "lucide-react"
 
-// Our old tabs are now navigation links
+// FIX: Updated labels to be JSX nodes with <br /> for line breaks
 const navLinks = [
   { href: "/overview", label: "Overview", icon: LayoutDashboard },
-  { href: "/segment-deep-dive", label: "Segment \nDeep Dive", icon: DatabaseZap },
-  { href: "/financial-statements", label: "Financial Statements", icon: Library },
-  { href: "/competitive-analysis", label: "Competitive Analysis", icon: Cloudy },
-  { href: "/expense-headcount", label: "Expense & Headcount", icon: Building2 },
+  { href: "/segment-deep-dive", label: <>Segment<br />Deep Dive</>, icon: DatabaseZap },
+  { href: "/financial-statements", label: <>Financial<br />Statements</>, icon: Library },
+  { href: "/competitive-analysis", label: <>Competitive<br />Analysis</>, icon: Cloudy },
+  { href: "/expense-headcount", label: <>Expense &<br />Headcount</>, icon: Building2 },
   { href: "/system-access", label: "System Access", icon: Lock },
 ]
 
