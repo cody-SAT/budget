@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { cn } from '../lib/utils' // FIX: Relative path
+import { cn } from '../lib/utils.js' // Using relative path
 import {
   LayoutDashboard,
   DatabaseZap,
@@ -18,7 +18,6 @@ import {
 const navLinks = [
   { href: "/overview", label: "Overview", icon: LayoutDashboard },
   { href: "/segment-deep-dive", label: "Segment Deep Dive", icon: DatabaseZap },
-  // FIX: Renamed "3 Financial Statements" to "Financial Statements"
   { href: "/financial-statements", label: "Financial Statements", icon: Library },
   { href: "/competitive-analysis", label: "Competitive Analysis", icon: Cloudy },
   { href: "/expense-headcount", label: "Expense & Headcount", icon: Building2 },
@@ -33,14 +32,14 @@ export function Sidebar() {
       <div className="flex flex-row sm:flex-col -mx-2 sm:mx-0 space-x-2 sm:space-x-0 sm:space-y-1 overflow-x-auto sm:overflow-visible">
         {navLinks.map((link) => {
           // Check if the current pathname starts with the link's href
-          // This makes "Segment Deep Dive" active even if on "/segment-deep-dive/google-cloud"
           const isActive = pathname ? pathname.startsWith(link.href) : false
           return (
             <Link
               key={link.href}
               href={link.href}
               className={cn(
-                "flex items-center gap-3 flex-shrink-0 sm:w-full sm:text-left py-3 px-4 font-medium text-sm sm:text-base transition-all duration-150 whitespace-nowrap focus:outline-none rounded-md",
+                // FIX: Removed "whitespace-nowrap" to allow text to wrap
+                "flex items-center gap-3 flex-shrink-0 sm:w-full sm:text-left py-3 px-4 font-medium text-sm sm:text-base transition-all duration-150 focus:outline-none rounded-md",
                 isActive
                   ? 'text-indigo-700 bg-indigo-50' // Active link style
                   : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50' // Inactive link style
