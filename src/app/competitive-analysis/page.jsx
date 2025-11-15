@@ -7,12 +7,14 @@ import {
 } from 'recharts';
 
 // --- Import Data ---
+// FIX: Using alias paths
 import {
   MOCK_CLOUD_MARKET_SHARE_DATA,
   MOCK_CLOUD_COMPARISON_DATA
-} from '../../data/mockData'; // Relative path
+} from '@/data/mockData.js'; 
 
 // --- Import UI Components ---
+// FIX: Using alias paths
 import {
   Table,
   TableHeader,
@@ -20,11 +22,12 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from '../../components/ui/table'; // Relative path
+} from '@/components/ui/table.jsx'; 
 
+// FIX: Using alias paths
 import {
   ChartWrapper
-} from '../../components/DashboardComponents'; // Relative path
+} from '@/components/DashboardComponents.jsx'; 
 
 // --- MAIN PAGE COMPONENT ---
 export default function CompetitiveAnalysisPage() {
