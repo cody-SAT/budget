@@ -1,13 +1,3 @@
-Excellent. That was the most tedious part. Now we're moving on to the actual content of your app.
-
-First, we'll put all of our mock data into its own file. This is great practice and makes our app components much cleaner.
-
-You'll need to create a src/data/ folder for this file.
-
-6. Mock Data
-File path: cody-SAT/budget/src/data/mockData.js
-
-Code:
 
 // All mock data moved from App.jsx to its own file.
 // All figures are in *Millions of USD*.
