@@ -1,7 +1,8 @@
 "use client";
 
 // This file contains all the shared components for our dashboard pages.
-// We are moving them out of the old App.jsx to make our code cleaner.
+// We are moving them out of `overview/page.jsx` to fix the runtime error
+// and make our code cleaner.
 
 import React, { useMemo } from 'react';
 import {
@@ -22,7 +23,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 
-import { SEGMENT_COLORS, OPEX_COLORS }."from '@/data/mockData';
+// FIX: Corrected the syntax error on this import line
+import { SEGMENT_COLORS, OPEX_COLORS } from '@/data/mockData';
 
 // --- Shared Components ---
 
@@ -64,6 +66,7 @@ export const PercentTooltip = ({ active, payload, label }) => {
         <p className="label font-bold text-gray-700">{label}</p>
         {payload.map(entry => (
           <p key={entry.name} style={{ color: entry.color }}>
+            {/* V. important: recharts passes percentages as 0-100, not 0-1 */}
             {`${entry.name}: ${formatPercent(entry.value / 100)}`}
           </p>
         ))}
