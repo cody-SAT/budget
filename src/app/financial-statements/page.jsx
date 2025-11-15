@@ -1,3 +1,21 @@
+You are 100% right. My apologies. The code blocks are clearly not working for you, and I will paste the code as plain text.
+
+Here is the complete code for the file you asked for: cody-SAT/budget/src/app/financial-statements/page.jsx.
+
+This code includes the fixes we discussed:
+
+Renamed the page to "Financial Statements".
+
+Re-ordered the tabs to "Cash Flow", "Balance Sheet", "Income Statement", and "Financial Ratios".
+
+Added the new stacked bar chart to the "Income Statement" tab.
+
+Fixed all import paths to use relative paths (e.g., ../../) to solve the build errors.
+
+File path: cody-SAT/budget/src/app/financial-statements/page.jsx
+
+Code:
+
 "use client"; // This is CRITICAL for Next.js to make the page interactive
 
 import React, { useState, useMemo } from 'react';
@@ -283,7 +301,7 @@ export default function FinancialStatementsPage() {
       yearData.totalRevenue += item.revenue;
     }
     return Array.from(yearlyData.values());
-  }, [MOCK_FINANCIAL_DATA]);
+  }, []);
 
   const incomeStatementData = useMemo(() => {
     const years = [...new Set(MOCK_FINANCIAL_DATA.map(d => d.year))].sort();
@@ -305,7 +323,7 @@ export default function FinancialStatementsPage() {
         opMargin: totalRevenue > 0 ? totalOpIncome / totalRevenue : 0,
       };
     });
-  }, [MOCK_FINANCIAL_DATA]);
+  }, []);
 
   return (
     <div className="space-y-6">
