@@ -3,27 +3,31 @@
 import React, { useState, useMemo } from 'react';
 
 // --- Import Data ---
+// FIX: Using alias paths
 import {
   MOCK_SYSTEM_ACCESS_DATA,
-} from '../../data/mockData'; // Relative path
+} from '@/data/mockData'; 
 
 // --- Import Helpers ---
+// FIX: Using alias paths
 import {
   formatLargeNumber,
   formatPercent,
   formatNumber,
   formatCurrency,
-} from '../../lib/utils'; // Relative path
+} from '@/lib/utils'; 
 
 // --- Import UI Components ---
+// FIX: Using alias paths
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../components/ui/select'; // Relative path
+} from '@/components/ui/select'; 
 
+// FIX: Using alias paths
 import {
   Table,
   TableHeader,
@@ -31,11 +35,12 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from '../../components/ui/table'; // Relative path
+} from '@/components/ui/table'; 
 
+// FIX: Using alias paths
 import {
   KpiCard,
-} from '../../components/DashboardComponents'; // Relative path
+} from '@/components/DashboardComponents'; 
 
 
 // --- MAIN PAGE COMPONENT ---
@@ -89,11 +94,12 @@ export default function SystemAccessPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <KpiCard title="Total Users" value={formatNumber(kpiData.totalUsers)} isCurrency={false} />
         <KpiCard title="Active Users" value={`${formatNumber(kpiData.activeUsers)} (${formatPercent(kpiData.activePercent)})`} isCurrency={false} />
-        <KpiCard title="Total Annual License Cost" value={formatLargeNumber(kpiData.totalAnnualCost / 1000000)} />
+        {/* FIX: Use formatCurrency for the exact dollar amount */}
+        <KpiCard title="Total Annual License Cost" value={formatCurrency(kpiData.totalAnnualCost)} />
+        {/* FIX: Removed the 'change' prop */}
         <KpiCard 
           title="Avg. Cost per Active User" 
           value={formatCurrency(kpiData.totalAnnualCost / (kpiData.activeUsers || 1))} 
-          change="/ year"
         />
       </div>
 
