@@ -7,47 +7,65 @@ import {
 } from 'recharts';
 
 // --- Import Data ---
+// FIX: Changed relative path from ../.. to ../
 import {
   MOCK_FINANCIAL_DATA,
   MOCK_BALANCE_SHEET_DATA,
   MOCK_CASH_FLOW_DATA,
   MOCK_RATIO_DATA,
-  uniqueYears
-} from '../../data/mockData'; // Relative path
+  uniqueYears,
+  OPEX_COLORS 
+} from '../data/mockData.js'; 
 
 // --- Import Helpers ---
+// FIX: Changed relative path from ../.. to ../
 import {
   formatLargeNumber,
   formatPercent,
   formatRatio,
-} from '../../lib/utils'; // Relative path
+} from '../lib/utils.js'; 
 
 // --- Import UI Components ---
+// FIX: Changed relative path from ../.. to ../
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../components/ui/select'; // Relative path
+} from '../components/ui/select.jsx'; 
 
+// FIX: Changed relative path from ../.. to ../
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '../../components/ui/tabs'; // Relative path
+} from '../components/ui/tabs.jsx'; 
 
+// FIX: Changed relative path from ../.. to ../
 import {
   KpiCard,
   ChartWrapper,
   PercentTooltip,
   CurrencyTooltip
-} from '../../components/DashboardComponents'; // Relative path
+} from '../components/DashboardComponents.jsx'; 
 
 // --- 1. INCOME STATEMENT TAB ---
 const IncomeStatement = ({ data, year }) => {
   const currentYearData = data.find(d => d.year === year) || {};
+  
+  // Data for the new stacked bar chart
+  const costStructureData = useMemo(() => {
+    return data.map(d => ({
+      year: d.year,
+      'Operating Income': d.totalOpIncome,
+      'Research & Development': d.totalRD,
+      'Sales & Marketing': d.totalSM,
+      'Cost of Revenue & TAC': d.totalCostOfRevenue + (d.totalTac || 0), // Combine CoR and TAC
+    }));
+  }, [data]);
+
   return (
     <div className="space-y-6 animate-fadeIn">
       <h3 className="text-xl font-semibold text-gray-800">Consolidated Income Statement ({year})</h3>
@@ -61,6 +79,22 @@ const IncomeStatement = ({ data, year }) => {
         <div className="flex justify-between py-2 border-b font-bold"><span>Total Operating Expenses</span><span>({formatLargeNumber(currentYearData.totalOpEx)})</span></div>
         <div className="flex justify-between py-2 pt-4 border-b font-bold text-lg"><span>Operating Income</span><span>{formatLargeNumber(currentYearData.totalOpIncome)}</span></div>
       </div>
+      
+      {/* --- NEW "More Interesting" Chart --- */}
+      <ChartWrapper title="Revenue vs. Cost Structure">
+        <BarChart data={costStructureData}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+          <XAxis dataKey="year" stroke="#666" />
+          <YAxis stroke="#666" tickFormatter={formatLargeNumber} />
+          <Tooltip content={<CurrencyTooltip />} />
+          <Legend />
+          <Bar dataKey="Operating Income" stackId="a" fill="#34A853" />
+          <Bar dataKey="Research & Development" stackId="a" fill={OPEX_COLORS['Research & Development']} />
+          <Bar dataKey="Sales & Marketing" stackId="a" fill={OPEX_COLORS['Sales & Marketing']} />
+          <Bar dataKey="Cost of Revenue & TAC" stackId="a" fill="#EA4335" />
+        </BarChart>
+      </ChartWrapper>
+
       <ChartWrapper title="Key Margins">
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
@@ -193,6 +227,7 @@ const FinancialRatios = ({ data, year }) => {
     <div className="space-y-6 animate-fadeIn">
       <h3 className="text-xl font-semibold text-gray-800">Key Financial Ratios ({year})</h3>
       
+      {/* Ratio Table */}
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 font-mono text-sm">
         {ratioData.map(item => (
           <div key={item.name} className="flex justify-between py-2 border-b">
@@ -201,6 +236,7 @@ const FinancialRatios = ({ data, year }) => {
           </div>
         ))}
       </div>
+
       <ChartWrapper title="Profitability Ratios">
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
@@ -212,6 +248,7 @@ const FinancialRatios = ({ data, year }) => {
           <Line type="monotone" dataKey="roa" name="Return on Assets" stroke="#34A853" strokeWidth={3} />
         </LineChart>
       </ChartWrapper>
+
       <ChartWrapper title="Leverage & Valuation Ratios">
         <LineChart data={data} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
@@ -233,6 +270,9 @@ const FinancialRatios = ({ data, year }) => {
 export default function FinancialStatementsPage() {
   const [selectedYear, setSelectedYear] = useState(uniqueYears[0]);
 
+  // FIX: Re-ordered tabs and set new default
+  const subTabs = ['Cash Flow Statement', 'Balance Sheet', 'Income Statement', 'Financial Ratios'];
+
   // Memoized data for all sub-components
   const timeSeriesData = useMemo(() => {
     const years = [...new Set(MOCK_FINANCIAL_DATA.map(d => d.year))].sort();
@@ -243,7 +283,7 @@ export default function FinancialStatementsPage() {
       yearData.totalRevenue += item.revenue;
     }
     return Array.from(yearlyData.values());
-  }, []);
+  }, [MOCK_FINANCIAL_DATA]);
 
   const incomeStatementData = useMemo(() => {
     const years = [...new Set(MOCK_FINANCIAL_DATA.map(d => d.year))].sort();
@@ -259,19 +299,20 @@ export default function FinancialStatementsPage() {
       const totalOpEx = totalRD + totalSM + totalGA;
       const totalOpIncome = yearData.reduce((acc, i) => acc + i.operatingIncome, 0);
       return {
-        year: y, totalRevenue, totalCostOfRevenue, grossProfit, totalRD, totalSM, totalGA,
+        year: y, totalRevenue, totalCostOfRevenue, totalTac, grossProfit, totalRD, totalSM, totalGA,
         totalOpEx, totalOpIncome,
         grossMargin: totalRevenue > 0 ? grossProfit / totalRevenue : 0,
         opMargin: totalRevenue > 0 ? totalOpIncome / totalRevenue : 0,
       };
     });
-  }, []);
+  }, [MOCK_FINANCIAL_DATA]);
 
   return (
     <div className="space-y-6">
       {/* Page Header and Year Filter */}
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">3 Financial Statements</h1>
+        {/* FIX: Renamed title */}
+        <h1 className="text-3xl font-bold text-gray-900">Financial Statements</h1>
         <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
           <SelectTrigger className="w-[180px] bg-white">
             <SelectValue placeholder="Select year" />
@@ -285,23 +326,24 @@ export default function FinancialStatementsPage() {
       </div>
 
       {/* --- Main Tabs --- */}
-      <Tabs defaultValue="Income Statement" className="w-full">
+      {/* FIX: Set new default and re-ordered list */}
+      <Tabs defaultValue="Cash Flow Statement" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="Income Statement">Income Statement</TabsTrigger>
-          <TabsTrigger value="Balance Sheet">Balance Sheet</TabsTrigger>
           <TabsTrigger value="Cash Flow Statement">Cash Flow</TabsTrigger>
+          <TabsTrigger value="Balance Sheet">Balance Sheet</TabsTrigger>
+          <TabsTrigger value="Income Statement">Income Statement</TabsTrigger>
           <TabsTrigger value="Financial Ratios">Ratios</TabsTrigger>
         </TabsList>
         
-        {/* --- Tab Content --- */}
-        <TabsContent value="Income Statement" className="mt-6">
-          <IncomeStatement data={incomeStatementData} year={selectedYear} />
+        {/* --- Tab Content (Re-ordered) --- */}
+        <TabsContent value="Cash Flow Statement" className="mt-6">
+          <CashFlowStatement data={MOCK_CASH_FLOW_DATA} timeSeries={timeSeriesData} year={selectedYear} />
         </TabsContent>
         <TabsContent value="Balance Sheet" className="mt-6">
           <BalanceSheet data={MOCK_BALANCE_SHEET_DATA} year={selectedYear} />
         </TabsContent>
-        <TabsContent value="Cash Flow Statement" className="mt-6">
-          <CashFlowStatement data={MOCK_CASH_FLOW_DATA} timeSeries={timeSeriesData} year={selectedYear} />
+        <TabsContent value="Income Statement" className="mt-6">
+          <IncomeStatement data={incomeStatementData} year={selectedYear} />
         </TabsContent>
         <TabsContent value="Financial Ratios" className="mt-6">
           <FinancialRatios data={MOCK_RATIO_DATA} year={selectedYear} />
