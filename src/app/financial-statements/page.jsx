@@ -90,7 +90,8 @@ const IncomeStatement = ({ data, year }) => {
           <Legend />
           <Bar dataKey="Operating Income" stackId="a" fill="#34A853" />
           <Bar dataKey="Research & Development" stackId="a" fill={OPEX_COLORS['Research & Development']} />
-          <Bar dataKey="Sales & Marketing" stackId="a" fill={OPEX_COLORS['Sales & Marketing']} />
+          {/* FIX: Changed fill from OPEX_COLORS['Sales & Marketing'] to Google Yellow */}
+          <Bar dataKey="Sales & Marketing" stackId="a" fill="#FBBC05" />
           <Bar dataKey="Cost of Revenue & TAC" stackId="a" fill="#EA4335" />
         </BarChart>
       </ChartWrapper>
@@ -103,7 +104,7 @@ const IncomeStatement = ({ data, year }) => {
           <Tooltip content={<PercentTooltip />} />
           <Legend />
           <Line type="monotone" dataKey="grossMargin" name="Gross Margin %" stroke="#4285F4" strokeWidth={3} />
-          <Line type="monotone" dataKey="opMargin" name="Operating Margin %" stroke="#34A8S3" strokeWidth={3} />
+          <Line type="monotone" dataKey="opMargin" name="Operating Margin %" stroke="#34A853" strokeWidth={3} />
         </LineChart>
       </ChartWrapper>
     </div>
