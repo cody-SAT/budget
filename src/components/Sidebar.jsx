@@ -17,7 +17,7 @@ import {
 // Our old tabs are now navigation links
 const navLinks = [
   { href: "/overview", label: "Overview", icon: LayoutDashboard },
-  { href: "/segment-deep-dive", label: "Segment Deep Dive", icon: DatabaseZap },
+  { href: "/segment-deep-dive", label: "Segment \nDeep Dive", icon: DatabaseZap },
   { href: "/financial-statements", label: "Financial Statements", icon: Library },
   { href: "/competitive-analysis", label: "Competitive Analysis", icon: Cloudy },
   { href: "/expense-headcount", label: "Expense & Headcount", icon: Building2 },
