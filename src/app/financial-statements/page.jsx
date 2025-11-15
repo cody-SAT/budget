@@ -7,7 +7,7 @@ import {
 } from 'recharts';
 
 // --- Import Data ---
-// FIX: Changed relative path from ../.. to ../
+// FIX: Corrected relative path from ../ to ../../
 import {
   MOCK_FINANCIAL_DATA,
   MOCK_BALANCE_SHEET_DATA,
@@ -15,41 +15,41 @@ import {
   MOCK_RATIO_DATA,
   uniqueYears,
   OPEX_COLORS 
-} from '../data/mockData.js'; 
+} from '../../data/mockData.js'; 
 
 // --- Import Helpers ---
-// FIX: Changed relative path from ../.. to ../
+// FIX: Corrected relative path from ../ to ../../
 import {
   formatLargeNumber,
   formatPercent,
   formatRatio,
-} from '../lib/utils.js'; 
+} from '../../lib/utils.js'; 
 
 // --- Import UI Components ---
-// FIX: Changed relative path from ../.. to ../
+// FIX: Corrected relative path from ../ to ../../
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../components/ui/select.jsx'; 
+} from '../../components/ui/select.jsx'; 
 
-// FIX: Changed relative path from ../.. to ../
+// FIX: Corrected relative path from ../ to ../../
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '../components/ui/tabs.jsx'; 
+} from '../../components/ui/tabs.jsx'; 
 
-// FIX: Changed relative path from ../.. to ../
+// FIX: Corrected relative path from ../ to ../../
 import {
   KpiCard,
   ChartWrapper,
   PercentTooltip,
   CurrencyTooltip
-} from '../components/DashboardComponents.jsx'; 
+} from '../../components/DashboardComponents.jsx'; 
 
 // --- 1. INCOME STATEMENT TAB ---
 const IncomeStatement = ({ data, year }) => {
@@ -103,7 +103,7 @@ const IncomeStatement = ({ data, year }) => {
           <Tooltip content={<PercentTooltip />} />
           <Legend />
           <Line type="monotone" dataKey="grossMargin" name="Gross Margin %" stroke="#4285F4" strokeWidth={3} />
-          <Line type="monotone" dataKey="opMargin" name="Operating Margin %" stroke="#34A853" strokeWidth={3} />
+          <Line type="monotone" dataKey="opMargin" name="Operating Margin %" stroke="#34A8S3" strokeWidth={3} />
         </LineChart>
       </ChartWrapper>
     </div>
