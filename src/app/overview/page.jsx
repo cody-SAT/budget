@@ -6,40 +6,40 @@ import {
   XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell
 } from 'recharts';
 
-// FIX: Use relative paths instead of '@/...'
+// FIX: Switched back to alias paths
 import {
   MOCK_FINANCIAL_DATA,
   uniqueYears,
   SEGMENT_COLORS,
-} from '../../data/mockData';
+} from '@/data/mockData';
 
-// FIX: Use relative paths instead of '@/...'
+// FIX: Switched back to alias paths
 import {
   formatLargeNumber,
   formatPercent,
-} from '../../lib/utils';
+} from '@/lib/utils';
 
-// FIX: Use relative paths instead of '@/...'
+// FIX: Switched back to alias paths
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../components/ui/select';
+} from '@/components/ui/select';
 
-// FIX: Use relative paths instead of '@/...'
-import { Checkbox } from "../../components/ui/checkbox";
-import { Label } from "../../components/ui/label";
+// FIX: Switched back to alias paths
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
-// FIX: Use relative paths instead of '@/...'
+// FIX: Switched back to alias paths
 import {
   KpiCard,
   ChartWrapper,
   PercentTooltip,
   CurrencyTooltip,
   RevenueToProfitSankey // Import the Sankey chart
-} from '../../components/DashboardComponents';
+} from '@/components/DashboardComponents';
 
 // --- 1. OVERVIEW DASHBOARD COMPONENT ---
 // This is the main default export for the page
@@ -122,6 +122,7 @@ export default function OverviewDashboard() {
   }, [selectedYear]);
 
   const opIncomeSegmentData = useMemo(() => {
+    // FIX: Corrected a runtime error, was 'selected.year', now 'selectedYear'
     const yearData = MOCK_FINANCIAL_DATA.filter(d => d.year === selectedYear);
     const segmentMap = new Map();
     for (const item of yearData) {
