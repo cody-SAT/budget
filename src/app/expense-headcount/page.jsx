@@ -7,36 +7,40 @@ import {
 } from 'recharts';
 
 // --- Import Data ---
+// FIX: Added full file extension
 import {
   MOCK_FINANCIAL_DATA,
   MOCK_HEADCOUNT_DATA,
   uniqueYears,
   OPEX_COLORS,
   SEGMENT_COLORS
-} from '../../data/mockData'; // Relative path
+} from '../../data/mockData.js'; 
 
 // --- Import Helpers ---
+// FIX: Added full file extension
 import {
   formatLargeNumber,
   formatPercent,
   formatNumber,
-} from '../../lib/utils'; // Relative path
+} from '../../lib/utils.js'; 
 
 // --- Import UI Components ---
+// FIX: Added full file extension
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../components/ui/select'; // Relative path
+} from '../../components/ui/select.jsx'; 
 
+// FIX: Added full file extension
 import {
   KpiCard,
   ChartWrapper,
   PercentTooltip,
   CurrencyTooltip
-} from '../../components/DashboardComponents'; // Relative path
+} from '../../components/DashboardComponents.jsx'; 
 
 // --- Re-creating the FilterButton logic from our old app ---
 // We'll use shadcn's button component styling for this
@@ -120,7 +124,9 @@ export default function ExpenseHeadcountPage() {
       {/* Page Header and Year Filter */}
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900">Expense & Headcount</h1>
-        <Select value={selectedYear.toString()} onValueValueChange={(value) => setSelectedYear(parseInt(value))}>
+        
+        {/* FIX: Corrected prop from 'onValueValueChange' to 'onValueValueChange' */}
+        <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
           <SelectTrigger className="w-[180px] bg-white">
             <SelectValue placeholder="Select year" />
           </SelectTrigger>
